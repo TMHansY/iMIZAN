@@ -5,7 +5,6 @@ import connectDB from "./config/db.js";
 import cookieParser from "cookie-parser";
 import examRoutes from "./routes/examRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import codingRoutes from "./routes/codingRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
 import { exec } from "child_process";
 import fs from "fs";
@@ -34,50 +33,11 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.post("/run-python", (req, res) => {
-  const { code } = req.body; // Get Python code from request body
-  writeFileSync("script.py", code); // Write code to script.py file
-
-  exec("python script.py", (error, stdout, stderr) => {
-    if (error) {
-      res.send(`Error is: ${stderr}`); // Send error message if any
-    } else {
-      res.send(stdout); // Send output of the Python script
-    }
-  });
-});
-
-app.post("/run-javascript", (req, res) => {
-  const { code } = req.body; // Get JavaScript code from request body
-  writeFileSync("script.js", code); // Write code to script.js file
-
-  exec("node script.js", (error, stdout, stderr) => {
-    if (error) {
-      res.send(`Error: ${stderr}`); // Send error message if any
-    } else {
-      res.send(stdout); // Send output of the JavaScript code
-    }
-  });
-});
-
-app.post("/run-java", (req, res) => {
-  const { code } = req.body; // Get Java code from request body
-  writeFileSync("Main.java", code); // Write code to Main.java file
-
-  exec("javac Main.java && java Main", (error, stdout, stderr) => {
-    if (error) {
-      res.send(`Error: ${stderr}`); // Send error message if any
-    } else {
-      res.send(stdout); // Send output of the Java program
-    }
-  });
-});
-
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/users", examRoutes);
 app.use("/api/users", resultRoutes);
-app.use("/api/coding", codingRoutes);
+
 
 // we we are deploying this in production
 // make frontend build then

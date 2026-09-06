@@ -80,11 +80,11 @@ export default function MultipleChoiceQuestion({ questions, saveUserTestScore, s
           },
         );
 
-        navigate(`/exam/${examId}/codedetails`);
-      } catch (error) {
-        console.error('Error saving results:', error);
-        toast.error('Failed to save results');
-      }
+        submitTest();
+        } catch (error) {
+          console.error('Error saving results:', error);
+          toast.error('Failed to save results');
+        }
     }
 
     setSelectedOption(null);
@@ -143,7 +143,7 @@ export default function MultipleChoiceQuestion({ questions, saveUserTestScore, s
             disabled={selectedOption === null}
             style={{ marginLeft: 'auto' }}
           >
-            {isLastQuestion ? 'Proceed to Coding' : 'Next Question'}
+            {isLastQuestion ? 'Finish Test' : 'Next Question'}
           </Button>
         </Stack>
       </CardContent>

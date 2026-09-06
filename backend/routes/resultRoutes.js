@@ -6,6 +6,8 @@ import {
   getUserResults,
   toggleResultVisibility,
   getAllResults,
+  getAttemptCount,
+  setResultDecision,
 } from "../controllers/resultController.js";
 
 const resultRoutes = express.Router();
@@ -22,6 +24,9 @@ resultRoutes.get("/results/all", getAllResults);
 // Get results for a specific exam (for lecturers)
 resultRoutes.get("/results/exam/:examId", getResultsByExamId);
 
+// Get number of attempts used for an exam (for students)
+resultRoutes.get("/results/attempts/:examId", getAttemptCount);
+
 // Get results for current user
 resultRoutes.get("/results/user", getUserResults);
 
@@ -30,5 +35,8 @@ resultRoutes.put(
   "/results/:resultId/toggle-visibility",
   toggleResultVisibility
 );
+
+// Set lecturer decision for a result
+resultRoutes.put("/results/:resultId/decision", setResultDecision);
 
 export default resultRoutes;

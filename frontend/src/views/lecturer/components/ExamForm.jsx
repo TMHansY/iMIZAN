@@ -11,7 +11,6 @@ import {
   Stack,
 } from '@mui/material';
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
-import CodingQuestionForm from './CodingQuestionForm';
 
 const CreateExam = ({ formik, title, subtitle, subtext }) => {
   const { values, errors, touched, handleBlur, handleChange, handleSubmit } = formik;
@@ -71,6 +70,20 @@ const CreateExam = ({ formik, title, subtitle, subtext }) => {
 
         <Stack mb={3}>
           <CustomTextField
+            id="maxAttempts"
+            name="maxAttempts"
+            label="Maximum Attempts Allowed"
+            variant="outlined"
+            fullWidth
+            value={values.maxAttempts}
+            onChange={handleChange}
+            error={touched.maxAttempts && Boolean(errors.maxAttempts)}
+            helperText={touched.maxAttempts && errors.maxAttempts}
+          />
+        </Stack>
+
+        <Stack mb={3}>
+          <CustomTextField
             id="liveDate"
             name="liveDate"
             label="Live Date and Time"
@@ -104,8 +117,6 @@ const CreateExam = ({ formik, title, subtitle, subtext }) => {
             }}
           />
         </Stack>
-
-        <CodingQuestionForm formik={formik} />
 
         <Button
           color="primary"

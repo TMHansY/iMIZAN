@@ -47,10 +47,7 @@ const TestPage = () => {
   }, [data]);
 
   const handleMcqCompletion = () => {
-    setIsMcqCompleted(true);
-    // Reset cheating log for coding exam
-    // resetCheatingLog(examId);
-    navigate(`/exam/${examId}/codedetails`);
+    handleTestSubmission();
   };
 
   const handleTestSubmission = async () => {
@@ -120,7 +117,7 @@ const TestPage = () => {
                   <CircularProgress />
                 ) : (
                   <MultipleChoiceQuestion
-                    submitTest={isMcqCompleted ? handleTestSubmission : handleMcqCompletion}
+                    submitTest={handleTestSubmission}
                     questions={data}
                     saveUserTestScore={saveUserTestScore}
                   />
@@ -145,7 +142,7 @@ const TestPage = () => {
                   >
                     <NumberOfQuestions
                       questionLength={questions.length}
-                      submitTest={isMcqCompleted ? handleTestSubmission : handleMcqCompletion}
+                      submitTest={handleTestSubmission}
                       examDurationInSeconds={examDurationInSeconds}
                     />
                   </Box>

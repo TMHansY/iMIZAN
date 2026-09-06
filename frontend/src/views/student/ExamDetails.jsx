@@ -4,211 +4,260 @@ import {
   CardContent,
   Checkbox,
   FormControlLabel,
-  List,
-  ListItem,
-  ListItemText,
-  Radio,
   Stack,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  Box,
+  Chip,
+  Divider,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
-import Link from '@mui/material/Link';
-import Paper from '@mui/material/Paper';
+import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined';
+import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
+import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
+import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
+import Webcam from 'react-webcam';
 import { uniqueId } from 'lodash';
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useGetQuestionsQuery } from 'src/slices/examApiSlice';
+import { useGetQuestionsQuery, useGetExamsQuery } from 'src/slices/examApiSlice';
+import axiosInstance from '../../axios';
 
-function Copyright(props) {
-  return (
-    <Typography variant="body2" color="text.secondary" align="center" {...props}>
-      {'Copyright © '}
-      <Link color="inherit" href="https://mui.com/">
-        Your Website
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
-  );
-}
-
-const DescriptionAndInstructions = () => {
-  const navigate = useNavigate();
-
-  const { examId } = useParams();
-  const { data: questions, isLoading } = useGetQuestionsQuery(examId); // Fetch questions using examId
-  // const { data: questions, isLoading } = useGetQuestionsQuery({ examId });
-
-  // fech exam data from backend
-  // pass testUnique id on start button
-  const testId = uniqueId();
-  // accetp
-  const [certify, setCertify] = useState(false);
-  const handleCertifyChange = () => {
-    setCertify(!certify);
-  };
-  const handleTest = () => {
-    // Check if the test date is valid here
-    const isValid = true; // Replace with your date validation logic
-    console.log('Test link');
-    if (isValid) {
-      // Replace 'examid' and 'TestId' with the actual values
-      navigate(`/exam/${examId}/${testId}`);
-    } else {
-      // Display an error message or handle invalid date
-      toast.error('Test date is not valid.');
-    }
-  };
-
-  return (
-    <Card>
-      <CardContent>
-        <Typography variant="h2" mb={3}>
-          Description
-        </Typography>
-        <Typography>
-          This practice test will allow you to measure your Python skills at the beginner level by
-          the way of various multiple choice questions. We recommend you to score at least 75% in
-          this test before moving to the next level questionnaire. It will help you in identifying
-          your strength and development areas. Based on the same you can plan your next steps in
-          learning Python and preparing for job placements.
-        </Typography>
-
-        <Typography>#Python #Coding #Software #MCQ #Beginner #Programming Language</Typography>
-
-        <>
-          <Typography variant="h3" mb={3} mt={3}>
-            Test Instructions
-          </Typography>
-          <List>
-            <ol>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    This Practice Test consists of only <strong>MCQ questions.</strong>
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    There are a total of <strong>40 questions.</strong> Test Duration is{' '}
-                    <strong>30 minutes.</strong>
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    There is <strong>Negative Marking</strong> for wrong answers.
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    <strong>Do Not switch tabs </strong> while taking the test.
-                    <strong> Switching Tabs will Block / End the test automatically.</strong>
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    The test will only run in <strong>full screen mode.</strong> Do not switch back
-                    to tab mode. Test will end automatically.
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    You may need to use blank sheets for rough work. Please arrange for blank sheets
-                    before starting.
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    Clicking on Back or Next will save the answer.
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    Questions can be reattempted till the time test is running.
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    Click on the finish test once you are done with the test.
-                  </Typography>
-                </ListItemText>
-              </li>
-              <li>
-                <ListItemText>
-                  <Typography variant="body1">
-                    You will be able to view the scores once your test is complete.
-                  </Typography>
-                </ListItemText>
-              </li>
-            </ol>
-          </List>
-        </>
-        <Typography variant="h3" mb={3} mt={3}>
-          Confirmation
-        </Typography>
-        <Typography mb={3}>
-          Your actions shall be proctored and any signs of wrongdoing may lead to suspension or
-          cancellation of your test.
-        </Typography>
-        <Stack direction="column" alignItems="center" spacing={3}>
-          <FormControlLabel
-            control={<Checkbox checked={certify} onChange={handleCertifyChange} color="primary" />}
-            label="I certify that I have carefully read and agree to all of the instructions mentioned above"
-          />
-          <div style={{ display: 'flex', padding: '2px', margin: '10px' }}>
-            <Button variant="contained" color="primary" disabled={!certify} onClick={handleTest}>
-              Start Test
-            </Button>
-          </div>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-};
-
-const imgUrl =
-  'https://images.unsplash.com/photo-1542831371-29b0f74f9713?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80';
+const instructionItems = [
+  {
+    icon: <ArticleOutlinedIcon color="action" />,
+    text: 'You may need blank sheets for rough work — have them ready before starting.',
+  },
+  {
+    icon: <FlagOutlinedIcon color="action" />,
+    text: 'Click "Finish Test" once you have answered all questions to submit.',
+  },
+  {
+    icon: <InsightsOutlinedIcon color="action" />,
+    text: 'Your score will be available once your lecturer makes it visible to you.',
+  },
+];
 
 export default function ExamDetails() {
+  const navigate = useNavigate();
+  const { examId } = useParams();
+
+  const { data: questions, isLoading } = useGetQuestionsQuery(examId);
+  const { data: examsData } = useGetExamsQuery();
+  const currentExam = examsData?.find((exam) => exam.examId === examId);
+
+  const [attemptInfo, setAttemptInfo] = useState(null);
+  const [attemptLoading, setAttemptLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAttempts = async () => {
+      try {
+        const response = await axiosInstance.get(`/api/users/results/attempts/${examId}`, {
+          withCredentials: true,
+        });
+        setAttemptInfo(response.data.data);
+      } catch (error) {
+        console.error('Error fetching attempt info:', error);
+      } finally {
+        setAttemptLoading(false);
+      }
+    };
+    fetchAttempts();
+  }, [examId]);
+
+  const attemptsExhausted = attemptInfo && attemptInfo.attemptsRemaining <= 0;
+
+  const testId = uniqueId();
+  const [certify, setCertify] = useState(false);
+  const handleCertifyChange = () => setCertify(!certify);
+
+  const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
+  const [cameraVerified, setCameraVerified] = useState(false);
+  const [cameraError, setCameraError] = useState(false);
+
+  const handleOpenCameraCheck = () => {
+    setCameraError(false);
+    setCameraDialogOpen(true);
+  };
+
+  const handleCameraReady = () => setCameraError(false);
+  const handleCameraError = () => setCameraError(true);
+
+  const handleConfirmCamera = () => {
+    setCameraVerified(true);
+    setCameraDialogOpen(false);
+  };
+
+  const handleTest = () => {
+    if (!cameraVerified) {
+      toast.error('Please complete the camera check before starting the test.');
+      return;
+    }
+    navigate(`/exam/${examId}/${testId}`);
+  };
+
   return (
-    <>
-      <Grid container sx={{ height: '100vh' }}>
-        <Grid
-          item
-          xs={false}
-          sm={4}
-          md={7}
-          sx={{
-            backgroundImage: `url(${imgUrl})`, // 'url(https://source.unsplash.com/random?wallpapers)',
-            backgroundRepeat: 'no-repeat',
-            backgroundColor: (t) =>
-              t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
-          <DescriptionAndInstructions />
-        </Grid>
-      </Grid>
-    </>
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="flex-start"
+      minHeight="100vh"
+      bgcolor="grey.50"
+      py={{ xs: 4, md: 8 }}
+      px={2}
+    >
+      <Card
+        elevation={2}
+        sx={{
+          maxWidth: 640,
+          width: '100%',
+          borderRadius: 3,
+        }}
+      >
+        <CardContent sx={{ p: { xs: 3, md: 5 } }}>
+          {/* Header */}
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            {currentExam?.examName || 'Exam'}
+          </Typography>
+          <Typography variant="body1" color="text.secondary" mb={3}>
+            This is a proctored multiple choice exam. Your webcam will monitor your session for
+            the entire duration to help ensure academic integrity.
+          </Typography>
+
+          {/* Quick facts */}
+          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap mb={4}>
+            <Chip
+              icon={<QuizOutlinedIcon />}
+              label={`${currentExam?.totalQuestions ?? '—'} question${
+                currentExam?.totalQuestions === 1 ? '' : 's'
+              }`}
+              variant="outlined"
+            />
+            <Chip
+              icon={<TimerOutlinedIcon />}
+              label={`${currentExam?.duration ?? '—'} minutes`}
+              variant="outlined"
+            />
+            <Chip icon={<VideocamOutlinedIcon />} label="Webcam proctored" variant="outlined" />
+          </Stack>
+
+          <Divider sx={{ mb: 3 }} />
+
+          {/* Instructions */}
+          <Typography variant="h6" fontWeight={600} gutterBottom>
+            Before you begin
+          </Typography>
+          <List dense disablePadding sx={{ mb: 3 }}>
+            {instructionItems.map((item, index) => (
+              <ListItem key={index} disableGutters sx={{ py: 0.75 }}>
+                <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
+            ))}
+          </List>
+
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Your actions during the exam are proctored. Signs of wrongdoing may lead to
+            suspension or cancellation of your result.
+          </Alert>
+
+          <Divider sx={{ mb: 3 }} />
+
+          {/* Confirmation & actions */}
+          <FormControlLabel
+            control={
+              <Checkbox checked={certify} onChange={handleCertifyChange} color="primary" />
+            }
+            label="I have read and agree to the instructions above"
+            sx={{ mb: 2 }}
+          />
+
+          {attemptInfo && (
+            <Typography
+              variant="body2"
+              color={attemptsExhausted ? 'error' : 'text.secondary'}
+              mb={2}
+            >
+              Attempts used: {attemptInfo.attemptsUsed} / {attemptInfo.maxAttempts}
+            </Typography>
+          )}
+
+          {attemptsExhausted ? (
+            <Alert severity="error">
+              You have used all {attemptInfo.maxAttempts} attempt
+              {attemptInfo.maxAttempts > 1 ? 's' : ''} allowed for this exam.
+            </Alert>
+          ) : (
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant={cameraVerified ? 'outlined' : 'contained'}
+                color={cameraVerified ? 'success' : 'primary'}
+                disabled={!certify || attemptLoading}
+                onClick={handleOpenCameraCheck}
+                fullWidth
+              >
+                {cameraVerified ? '✓ Camera Checked' : 'Check Camera'}
+              </Button>
+
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={!certify || !cameraVerified || attemptLoading}
+                onClick={handleTest}
+                fullWidth
+              >
+                Start Test
+              </Button>
+            </Stack>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Camera check dialog */}
+      <Dialog
+        open={cameraDialogOpen}
+        onClose={() => setCameraDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Camera Check</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Your camera will be used to monitor the exam for the entire duration. Make sure your
+            face is clearly visible below before continuing.
+          </Typography>
+          {cameraError ? (
+            <Alert severity="error">
+              Camera access was denied or unavailable. Please allow camera permissions in your
+              browser and try again.
+            </Alert>
+          ) : (
+            <Webcam
+              audio={false}
+              onUserMedia={handleCameraReady}
+              onUserMediaError={handleCameraError}
+              style={{ width: '100%', borderRadius: 8 }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCameraDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" disabled={cameraError} onClick={handleConfirmCamera}>
+            Looks Good, Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }

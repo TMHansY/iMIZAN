@@ -16,60 +16,61 @@ import {
   Grid,
   CircularProgress,
   Alert,
-  Tabs,
-  Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
   TextField,
   InputAdornment,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Stack,
+  Divider,
 } from '@mui/material';
-import { Code, Visibility, VisibilityOff, Search, CheckCircle } from '@mui/icons-material';
+import { Visibility, VisibilityOff, Search } from '@mui/icons-material';
+import RateReviewIcon from '@mui/icons-material/RateReview';
+import CloseIcon from '@mui/icons-material/Close';
 import PageContainer from 'src/components/container/PageContainer';
 import DashboardCard from '../../components/shared/DashboardCard';
 import axiosInstance from '../../axios';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import { docco } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { useLazyGetCheatingLogsQuery } from 'src/slices/cheatingLogApiSlice';
 
 const ResultPage = () => {
   const { userInfo } = useSelector((state) => state.auth);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [selectedResult, setSelectedResult] = useState(null);
-  const [codeDialogOpen, setCodeDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedExam, setSelectedExam] = useState('all');
   const [exams, setExams] = useState([]);
+
+  // Review dialog state
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [reviewResult, setReviewResult] = useState(null);
+  const [reviewLog, setReviewLog] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [triggerGetCheatingLogs] = useLazyGetCheatingLogsQuery();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch all exams first
         const examsResponse = await axiosInstance.get('/api/users/exam', {
           withCredentials: true,
         });
         setExams(examsResponse.data);
 
-        // Fetch results based on user role
         if (userInfo?.role === 'lecturer') {
-          // For lecturers, fetch all results
           const resultsResponse = await axiosInstance.get('/api/users/results/all', {
             withCredentials: true,
           });
           setResults(resultsResponse.data.data);
         } else {
-          // For students, fetch only their visible results
           const resultsResponse = await axiosInstance.get('/api/users/results/user', {
             withCredentials: true,
           });
@@ -86,43 +87,68 @@ const ResultPage = () => {
     fetchData();
   }, [userInfo]);
 
+  const refreshResults = async () => {
+    const response = await axiosInstance.get('/api/users/results/all', {
+      withCredentials: true,
+    });
+    setResults(response.data.data);
+  };
+
   const handleToggleVisibility = async (resultId) => {
     try {
       await axiosInstance.put(
         `/api/users/results/${resultId}/toggle-visibility`,
         {},
-        {
-          withCredentials: true,
-        },
+        { withCredentials: true },
       );
       toast.success('Visibility updated successfully');
-      // Refresh results
-      const response = await axiosInstance.get('/api/users/results/all', {
-        withCredentials: true,
-      });
-      setResults(response.data.data);
+      await refreshResults();
     } catch (err) {
       toast.error('Failed to update visibility');
     }
   };
 
-  const handleViewCode = (result) => {
-    setSelectedResult(result);
-    setCodeDialogOpen(true);
+  const handleExamChange = (examId) => {
+    setSelectedExam(examId);
   };
 
-  const handleExamChange = async (examId) => {
-    setSelectedExam(examId);
+  const handleOpenReview = async (result) => {
+    setReviewResult(result);
+    setReviewLog(null);
+    setReviewDialogOpen(true);
+    setReviewLoading(true);
     try {
-      setLoading(true);
-      const response = await axiosInstance.get(`/api/users/results/exam/${examId}`, {
-        withCredentials: true,
-      });
-      setResults(response.data.data);
+      const { data: logs } = await triggerGetCheatingLogs(result.examId);
+      const studentLogs = (logs || [])
+        .filter((log) => log.email === result.userId?.email)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setReviewLog(studentLogs[0] || null);
     } catch (err) {
-      toast.error('Failed to fetch exam results');
+      toast.error('Failed to load cheating log for this student');
     } finally {
-      setLoading(false);
+      setReviewLoading(false);
+    }
+  };
+
+  const handleCloseReview = () => {
+    setReviewDialogOpen(false);
+    setReviewResult(null);
+    setReviewLog(null);
+  };
+
+  const handleSetDecision = async (decision) => {
+    if (!reviewResult) return;
+    try {
+      const response = await axiosInstance.put(
+        `/api/users/results/${reviewResult._id}/decision`,
+        { decision },
+        { withCredentials: true },
+      );
+      toast.success(decision ? `Marked as ${decision}` : 'Reset to automatic status');
+      setReviewResult(response.data.data);
+      await refreshResults();
+    } catch (err) {
+      toast.error('Failed to update decision');
     }
   };
 
@@ -133,6 +159,14 @@ const ResultPage = () => {
     const matchesExam = selectedExam === 'all' || result.examId === selectedExam;
     return matchesSearch && matchesExam;
   });
+
+  const StatusChip = ({ result }) => (
+    <Chip
+      label={result.status === 'pass' ? 'Pass' : 'Fail'}
+      color={result.status === 'pass' ? 'success' : 'error'}
+      size="small"
+    />
+  );
 
   if (loading) {
     return (
@@ -155,8 +189,7 @@ const ResultPage = () => {
     return (
       <PageContainer title="My Exam Results" description="View your exam results">
         <Grid container spacing={3}>
-          {/* Summary Cards */}
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -166,7 +199,7 @@ const ResultPage = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -182,20 +215,7 @@ const ResultPage = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Total Submissions
-                </Typography>
-                <Typography variant="h3">
-                  {results.reduce((acc, curr) => acc + (curr.codingSubmissions?.length || 0), 0)}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
 
-          {/* Results Table */}
           <Grid item xs={12}>
             <DashboardCard title="My Results">
               <TableContainer component={Paper}>
@@ -204,15 +224,17 @@ const ResultPage = () => {
                     <TableRow>
                       <TableCell>Exam Name</TableCell>
                       <TableCell>MCQ Score</TableCell>
-                      <TableCell>Coding Submissions</TableCell>
                       <TableCell>Total Score</TableCell>
+                      <TableCell>Status</TableCell>
                       <TableCell>Submission Date</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {results.map((result) => (
                       <TableRow key={result._id}>
-                        <TableCell>{result.examId?.examName || 'Exam'}</TableCell>
+                        <TableCell>
+                          {exams.find((e) => e.examId === result.examId)?.examName || 'Exam'}
+                        </TableCell>
                         <TableCell>
                           <Chip
                             label={`${result.percentage.toFixed(1)}%`}
@@ -220,23 +242,14 @@ const ResultPage = () => {
                           />
                         </TableCell>
                         <TableCell>
-                          <Box display="flex" alignItems="center" gap={1}>
-                            <CheckCircle color="success" fontSize="small" />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
                           <Typography variant="body2" color="textSecondary">
                             Total: {result.totalMarks}
                           </Typography>
                         </TableCell>
-                        <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          {result.codingSubmissions?.length > 0 && (
-                            <IconButton onClick={() => handleViewCode(result)}>
-                              <Code />
-                            </IconButton>
-                          )}
+                          <StatusChip result={result} />
                         </TableCell>
+                        <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -245,40 +258,6 @@ const ResultPage = () => {
             </DashboardCard>
           </Grid>
         </Grid>
-
-        {/* Code View Dialog */}
-        <Dialog
-          open={codeDialogOpen}
-          onClose={() => setCodeDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>My Code Submissions</DialogTitle>
-          <DialogContent>
-            {selectedResult?.codingSubmissions?.map((submission, index) => (
-              <Box key={index} mb={3}>
-                <Typography variant="h6" gutterBottom>
-                  Question {index + 1}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" gutterBottom>
-                  Language: {submission.language}
-                </Typography>
-                <SyntaxHighlighter language={submission.language} style={docco}>
-                  {submission.code}
-                </SyntaxHighlighter>
-                <Box mt={1}>
-                  <Chip icon={<CheckCircle />} label="Success" color="success" />
-                  {submission.executionTime && (
-                    <Chip label={`Execution Time: ${submission.executionTime}ms`} sx={{ ml: 1 }} />
-                  )}
-                </Box>
-              </Box>
-            ))}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setCodeDialogOpen(false)}>Close</Button>
-          </DialogActions>
-        </Dialog>
       </PageContainer>
     );
   }
@@ -287,8 +266,7 @@ const ResultPage = () => {
   return (
     <PageContainer title="Results Dashboard" description="View and manage exam results">
       <Grid container spacing={3}>
-        {/* Summary Cards */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -298,7 +276,7 @@ const ResultPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -315,26 +293,9 @@ const ResultPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Total Submissions
-              </Typography>
-              <Typography variant="h3">
-                {filteredResults.reduce(
-                  (acc, curr) => acc + (curr.codingSubmissions?.length || 0),
-                  0,
-                )}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
 
-        {/* Results Table */}
         <Grid item xs={12}>
           <DashboardCard title="Exam Results">
-            {/* Exam Filter and Search */}
             <Box mb={3} display="flex" gap={2}>
               <FormControl sx={{ minWidth: 200 }}>
                 <InputLabel>Select Exam</InputLabel>
@@ -345,7 +306,7 @@ const ResultPage = () => {
                 >
                   <MenuItem value="all">All Exams</MenuItem>
                   {exams.map((exam) => (
-                    <MenuItem key={exam._id} value={exam._id}>
+                    <MenuItem key={exam.examId} value={exam.examId}>
                       {exam.examName}
                     </MenuItem>
                   ))}
@@ -367,16 +328,6 @@ const ResultPage = () => {
               />
             </Box>
 
-            <Tabs
-              value={selectedTab}
-              onChange={(e, newValue) => setSelectedTab(newValue)}
-              sx={{ mb: 2 }}
-            >
-              <Tab label="All Results" />
-              <Tab label="MCQ Results" />
-              <Tab label="Coding Results" />
-            </Tabs>
-
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
@@ -385,8 +336,8 @@ const ResultPage = () => {
                     <TableCell>Email</TableCell>
                     <TableCell>Exam</TableCell>
                     <TableCell>MCQ Score</TableCell>
-                    <TableCell>Coding Submissions</TableCell>
                     <TableCell>Total Score</TableCell>
+                    <TableCell>Status</TableCell>
                     <TableCell>Submission Date</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
@@ -397,7 +348,8 @@ const ResultPage = () => {
                       <TableCell>{result.userId?.name}</TableCell>
                       <TableCell>{result.userId?.email}</TableCell>
                       <TableCell>
-                        {exams.find((e) => e._id === result.examId)?.examName || result.examId}
+                        {exams.find((e) => e.examId === result.examId)?.examName ||
+                          'Unknown Exam'}
                       </TableCell>
                       <TableCell>
                         <Chip
@@ -406,22 +358,32 @@ const ResultPage = () => {
                         />
                       </TableCell>
                       <TableCell>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <CheckCircle color="success" fontSize="small" />
-                        </Box>
-                      </TableCell>
-                      <TableCell>
                         <Typography variant="body2" color="textSecondary">
                           Total: {result.totalMarks}
                         </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <StatusChip result={result} />
+                        {result.lecturerDecision && (
+                          <Typography variant="caption" display="block" color="textSecondary">
+                            (manual)
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <IconButton
                           onClick={() => handleToggleVisibility(result._id)}
                           color={result.showToStudent ? 'success' : 'default'}
+                          title="Toggle visibility to student"
                         >
                           {result.showToStudent ? <Visibility /> : <VisibilityOff />}
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleOpenReview(result)}
+                          title="Review log & decide pass/fail"
+                        >
+                          <RateReviewIcon />
                         </IconButton>
                       </TableCell>
                     </TableRow>
@@ -433,37 +395,104 @@ const ResultPage = () => {
         </Grid>
       </Grid>
 
-      {/* Code View Dialog */}
-      <Dialog
-        open={codeDialogOpen}
-        onClose={() => setCodeDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Student Code Submissions</DialogTitle>
-        <DialogContent>
-          {selectedResult?.codingSubmissions?.map((submission, index) => (
-            <Box key={index} mb={3}>
-              <Typography variant="h6" gutterBottom>
-                Question {index + 1}
+      {/* Review & Decide Dialog */}
+      <Dialog open={reviewDialogOpen} onClose={handleCloseReview} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">
+              Review — {reviewResult?.userId?.name} ({reviewResult?.userId?.email})
+            </Typography>
+            <IconButton onClick={handleCloseReview} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {reviewLoading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              <Typography variant="subtitle2" gutterBottom>
+                Score: {reviewResult?.percentage?.toFixed(1)}% (Total: {reviewResult?.totalMarks})
+              </Typography>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="subtitle1" gutterBottom>
+                Proctoring Flags
+              </Typography>
+
+              {reviewLog ? (
+                <>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                    <Chip label={`No Face: ${reviewLog.noFaceCount}`} />
+                    <Chip label={`Multiple Faces: ${reviewLog.multipleFaceCount}`} />
+                    <Chip label={`Cell Phone: ${reviewLog.cellPhoneCount}`} />
+                    <Chip label={`Prohibited Object: ${reviewLog.prohibitedObjectCount}`} />
+                  </Stack>
+
+                  {reviewLog.screenshots?.length > 0 ? (
+                    <Grid container spacing={1}>
+                      {reviewLog.screenshots.map((s, i) => (
+                        <Grid item xs={4} key={i}>
+                          <img
+                            src={s.url}
+                            alt={s.type}
+                            style={{ width: '100%', borderRadius: 4 }}
+                          />
+                          <Typography variant="caption" display="block" textAlign="center">
+                            {s.type}
+                          </Typography>
+                        </Grid>
+                      ))}
+                    </Grid>
+                  ) : (
+                    <Typography variant="body2" color="textSecondary">
+                      No screenshots recorded for this attempt.
+                    </Typography>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" color="textSecondary">
+                  No proctoring log found for this student's attempt.
+                </Typography>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography variant="subtitle1" gutterBottom>
+                Decision
               </Typography>
               <Typography variant="body2" color="textSecondary" gutterBottom>
-                Language: {submission.language}
+                Automatic status based on score: {reviewResult?.percentage >= 50 ? 'Pass' : 'Fail'}
+                {reviewResult?.lecturerDecision &&
+                  ` — currently overridden to "${reviewResult.lecturerDecision}"`}
               </Typography>
-              <SyntaxHighlighter language={submission.language} style={docco}>
-                {submission.code}
-              </SyntaxHighlighter>
-              <Box mt={1}>
-                <Chip icon={<CheckCircle />} label="Success" color="success" />
-                {submission.executionTime && (
-                  <Chip label={`Execution Time: ${submission.executionTime}ms`} sx={{ ml: 1 }} />
-                )}
-              </Box>
-            </Box>
-          ))}
+            </>
+          )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCodeDialogOpen(false)}>Close</Button>
+          <Button onClick={() => handleSetDecision(null)} disabled={reviewLoading}>
+            Reset to Automatic
+          </Button>
+          <Button
+            color="error"
+            variant="outlined"
+            onClick={() => handleSetDecision('fail')}
+            disabled={reviewLoading}
+          >
+            Mark as Fail
+          </Button>
+          <Button
+            color="success"
+            variant="contained"
+            onClick={() => handleSetDecision('pass')}
+            disabled={reviewLoading}
+          >
+            Mark as Pass
+          </Button>
         </DialogActions>
       </Dialog>
     </PageContainer>

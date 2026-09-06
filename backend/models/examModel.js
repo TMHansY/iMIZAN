@@ -15,6 +15,11 @@ const examSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
+    maxAttempts: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
     liveDate: {
       type: Date,
       required: true,

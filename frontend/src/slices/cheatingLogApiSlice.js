@@ -25,4 +25,8 @@ export const cheatingLogApiSlice = apiSlice.injectEndpoints({
 });
 
 // Export the generated hooks for each endpoint
-export const { useGetCheatingLogsQuery, useSaveCheatingLogMutation } = cheatingLogApiSlice;
+export const {
+  useGetCheatingLogsQuery,
+  useSaveCheatingLogMutation,
+  useLazyGetCheatingLogsQuery,
+} = cheatingLogApiSlice;
