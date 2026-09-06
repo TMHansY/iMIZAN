@@ -1,16 +1,27 @@
 import * as React from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
 import Typography from '@mui/material/Typography';
-import { CardActionArea, IconButton, Stack, Box } from '@mui/material';
+import { IconButton, Stack, Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '../../lecturer/components/DeleteIcon';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import QuizIcon from '@mui/icons-material/Quiz';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import SchoolIcon from '@mui/icons-material/School';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 
-const imgUrl =
-  'https://images.unsplash.com/photo-1555949963-aa79dcee981c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fGNvbXB1dGVyJTIwc2NpZW5jZXxlbnwwfHwwfHx8MA%3D%3D&w=1000&q=80';
+const cardIcons = [MenuBookIcon, QuizIcon, AssignmentIcon, SchoolIcon, FactCheckIcon, EditNoteIcon];
+const cardColors = ['#5C6BC0', '#26A69A', '#EF5350', '#AB47BC', '#FFA726', '#42A5F5', '#66BB6A'];
+
+// Deterministic pick based on examId, so each exam always shows the same icon/color
+const pickFromId = (id, arr) => {
+  const hash = (id || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return arr[hash % arr.length];
+};
 
 export default function ExamCard({ exam }) {
   const { examName, duration, totalQuestions, examId, liveDate, deadDate } = exam;
@@ -19,6 +30,9 @@ export default function ExamCard({ exam }) {
 
   const navigate = useNavigate();
   const isExamActive = true;
+
+  const Icon = pickFromId(examId, cardIcons);
+  const iconBgColor = pickFromId(examId + 'color', cardColors);
 
   const handleCardClick = () => {
     if (isLecturer) {
@@ -32,7 +46,19 @@ export default function ExamCard({ exam }) {
   return (
     <Card>
       <Box onClick={handleCardClick} sx={{ cursor: 'pointer' }}>
-        <CardMedia component="img" height="140" image={imgUrl} alt="Exam" />
+        <Box
+          sx={{
+            height: 140,
+            bgcolor: iconBgColor,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.2s ease',
+            '&:hover': { transform: 'scale(1.03)' },
+          }}
+        >
+          <Icon sx={{ fontSize: 64, color: 'white' }} />
+        </Box>
         <CardContent>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography gutterBottom variant="h5" component="div">

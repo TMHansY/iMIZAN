@@ -25,6 +25,7 @@ import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import InsightsOutlinedIcon from '@mui/icons-material/InsightsOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import Webcam from 'react-webcam';
 import { uniqueId } from 'lodash';
 import * as React from 'react';
@@ -38,6 +39,10 @@ const instructionItems = [
   {
     icon: <ArticleOutlinedIcon color="action" />,
     text: 'You may need blank sheets for rough work — have them ready before starting.',
+  },
+  {
+    icon: <VisibilityOutlinedIcon color="action" />,
+    text: 'Brief moments where your face isn\'t visible (e.g. looking down to work on paper) are logged, but not automatically penalized — your lecturer will review the recording and decide whether each flagged moment was reasonable.',
   },
   {
     icon: <FlagOutlinedIcon color="action" />,
@@ -168,8 +173,8 @@ export default function ExamDetails() {
           </List>
 
           <Alert severity="info" sx={{ mb: 3 }}>
-            Your actions during the exam are proctored. Signs of wrongdoing may lead to
-            suspension or cancellation of your result.
+            Your actions during the exam are proctored. 
+            Signs of wrongdoing may lead to cancellation of your result.
           </Alert>
 
           <Divider sx={{ mb: 3 }} />
