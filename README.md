@@ -123,6 +123,7 @@ Still in Terminal, in the project's root folder:
 npm install
 cd frontend
 npm install
+npm install @vladmandic/face-api
 cd ..
 ```
 
