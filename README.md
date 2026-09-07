@@ -32,7 +32,7 @@ You should have received the project as a folder or a git repository link. If it
 
 ```bash
 cd ~
-git clone <the-link-you-were-given>
+git clone https://github.com/TMHansY/iMIZAN
 cd iMIZAN
 ```
 
