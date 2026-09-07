@@ -164,7 +164,7 @@ export default function CheatingTable() {
                 <TableCell>No Face Count</TableCell>
                 <TableCell>Multiple Face Count</TableCell>
                 <TableCell>Cell Phone Count</TableCell>
-                <TableCell>Prohibited Object Count</TableCell>
+                <TableCell>Tab Switch Count</TableCell>
                 <TableCell>Screenshots</TableCell>
               </TableRow>
             </TableHead>
@@ -207,9 +207,9 @@ export default function CheatingTable() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        icon={getViolationIcon(log.prohibitedObjectCount)}
-                        label={log.prohibitedObjectCount}
-                        color={getViolationColor(log.prohibitedObjectCount)}
+                        icon={getViolationIcon(log.tabSwitchCount)}
+                        label={log.tabSwitchCount}
+                        color={getViolationColor(log.tabSwitchCount)}
                         size="small"
                       />
                     </TableCell>

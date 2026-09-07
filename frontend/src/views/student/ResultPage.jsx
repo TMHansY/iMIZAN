@@ -490,7 +490,7 @@ const ResultPage = () => {
                     <Chip label={`No Face: ${reviewLog.noFaceCount}`} />
                     <Chip label={`Multiple Faces: ${reviewLog.multipleFaceCount}`} />
                     <Chip label={`Cell Phone: ${reviewLog.cellPhoneCount}`} />
-                    <Chip label={`Prohibited Object: ${reviewLog.prohibitedObjectCount}`} />
+                    <Chip label={`Tab Switch: ${reviewLog.tabSwitchCount}`} />
                   </Stack>
 
                   {reviewLog.screenshots?.length > 0 ? (

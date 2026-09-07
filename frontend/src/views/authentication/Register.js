@@ -111,7 +111,7 @@ const Register = () => {
                   component="h1" // This will render an <h1> element
                   style={{
                     fontWeight: 'bold',
-                    color: '#1976d2', // Primary color or any color you prefer
+                    color: '#008000', // Primary color or any color you prefer
                     margin: '20px 0',
                     textAlign: 'center',
                     textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)', // Optional shadow effect

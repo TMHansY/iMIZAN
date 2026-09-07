@@ -4,7 +4,7 @@ import * as faceapi from '@vladmandic/face-api';
 import Webcam from 'react-webcam';
 import { drawRect } from './utilities';
 import { Box, Card } from '@mui/material';
-import swal from 'sweetalert';
+import { toast } from 'react-toastify';
 import { UploadClient } from '@uploadcare/upload-client';
 
 const client = new UploadClient({
@@ -15,20 +15,18 @@ const client = new UploadClient({
 // How far (as a ratio of eye distance) the nose can drift from center
 // before we consider the student's head turned away from the screen.
 const LOOK_AWAY_THRESHOLD = 0.16;
-// How long the head must stay turned away, continuously, before it counts
-// as a real "looking away" violation (filters out quick glances).
-const LOOK_AWAY_SUSTAIN_MS = 3000;
+// How long a condition must hold continuously before it counts as a real
+// violation (filters out momentary flickers / quick glances).
+const FACE_ISSUE_SUSTAIN_MS = 3000;
 
 export default function Home({ cheatingLog, incrementViolation }) {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const [lastDetectionTime, setLastDetectionTime] = useState({});
   const [screenshots, setScreenshots] = useState([]);
-  const [modelsLoaded, setModelsLoaded] = useState(false);
 
-  // Tracks how long the head has been continuously turned away.
-  // A ref (not state) since it's updated every tick and shouldn't trigger renders.
-  const lookAwayStartRef = useRef(null);
+  // Refs (not state) since these update every tick and shouldn't trigger renders.
+  const faceIssueStartRef = useRef(null);
 
   useEffect(() => {
     if (cheatingLog && cheatingLog.screenshots) {
@@ -76,6 +74,13 @@ export default function Home({ cheatingLog, incrementViolation }) {
     }
   };
 
+  const violationMessages = {
+    noFace: 'Please face the screen',
+    multipleFace: 'Multiple faces detected',
+    cellPhone: 'Cell phone detected',
+    tabSwitch: 'Tab switch detected',
+  };
+
   const handleDetection = async (type) => {
     const now = Date.now();
     const lastTime = lastDetectionTime[type] || 0;
@@ -86,22 +91,12 @@ export default function Home({ cheatingLog, incrementViolation }) {
       const screenshot = await captureScreenshotAndUpload(type);
       incrementViolation(type, screenshot);
 
-      switch (type) {
-        case 'noFace':
-          swal('Face Not Visible', 'Warning Recorded', 'warning');
-          break;
-        case 'multipleFace':
-          swal('Multiple Faces Detected', 'Warning Recorded', 'warning');
-          break;
-        case 'cellPhone':
-          swal('Cell Phone Detected', 'Warning Recorded', 'warning');
-          break;
-        case 'lookingAway':
-          swal('Please Face the Screen', 'Warning Recorded', 'warning');
-          break;
-        default:
-          break;
-      }
+      // Non-blocking toast — doesn't require a click, doesn't interrupt
+      // answering questions, and auto-dismisses on its own.
+      toast.warning(violationMessages[type] || 'Warning recorded', {
+        autoClose: 2500,
+        pauseOnHover: false,
+      });
     }
   };
 
@@ -116,17 +111,14 @@ export default function Home({ cheatingLog, incrementViolation }) {
     try {
       const cocoNet = await cocossd.load();
       await loadModels();
-      setModelsLoaded(true);
       console.log('AI models loaded.');
       setInterval(() => detect(cocoNet), 1000);
     } catch (error) {
       console.error('Error loading models:', error);
-      swal('Error', 'Failed to load AI models. Please refresh the page.', 'error');
+      toast.error('Failed to load AI models. Please refresh the page.');
     }
   };
 
-  // Checks whether the head is turned away from center using landmark positions.
-  // Returns true if turned beyond the threshold, false if roughly facing forward.
   const isLookingAway = (landmarks) => {
     const leftEye = landmarks.getLeftEye();
     const rightEye = landmarks.getRightEye();
@@ -184,7 +176,9 @@ export default function Home({ cheatingLog, incrementViolation }) {
       console.error('Error during object detection:', error);
     }
 
-    // --- face-api.js: real face presence + looking-away detection ---
+    // --- face-api: unified check — no face OR face turned away, both
+    // treated as one "not facing the screen" condition, sustained for a
+    // few seconds before it counts as a violation.
     try {
       const faceResult = await faceapi
         .detectSingleFace(
@@ -193,23 +187,17 @@ export default function Home({ cheatingLog, incrementViolation }) {
         )
         .withFaceLandmarks(true);
 
-      if (!faceResult) {
-        handleDetection('noFace');
-        lookAwayStartRef.current = null;
-      } else {
-        const turnedAway = isLookingAway(faceResult.landmarks);
+      const notFacingScreen = !faceResult || isLookingAway(faceResult.landmarks);
 
-        if (turnedAway) {
-          if (lookAwayStartRef.current === null) {
-            lookAwayStartRef.current = Date.now();
-          } else if (Date.now() - lookAwayStartRef.current >= LOOK_AWAY_SUSTAIN_MS) {
-            handleDetection('lookingAway');
-            // Reset so it takes another full sustained period before re-logging
-            lookAwayStartRef.current = Date.now();
-          }
-        } else {
-          lookAwayStartRef.current = null;
+      if (notFacingScreen) {
+        if (faceIssueStartRef.current === null) {
+          faceIssueStartRef.current = Date.now();
+        } else if (Date.now() - faceIssueStartRef.current >= FACE_ISSUE_SUSTAIN_MS) {
+          handleDetection('noFace');
+          faceIssueStartRef.current = Date.now();
         }
+      } else {
+        faceIssueStartRef.current = null;
       }
     } catch (error) {
       console.error('Error during face detection:', error);
@@ -218,6 +206,19 @@ export default function Home({ cheatingLog, incrementViolation }) {
 
   useEffect(() => {
     runDetectionLoop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tab-switch detection: browsers don't allow JS to prevent switching
+  // tabs, but the Page Visibility API reliably tells us when it happens.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleDetection('tabSwitch');
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

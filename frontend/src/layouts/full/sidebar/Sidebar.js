@@ -1,5 +1,5 @@
 import { useMediaQuery, Box, Drawer, Typography } from '@mui/material';
-import Logo from '../shared/logo/Logo';
+import { Link } from 'react-router-dom';
 import SidebarItems from './SidebarItems';
 // import { Upgrade } from './Updrade';
 
@@ -48,21 +48,19 @@ const Sidebar = (props) => {
                 px: 3,
                 py: 2,
                 width: '100%',
-                gap: 2, // adds spacing between logo and text
               }}
             >
-              <Logo />
-
               <Typography
+                component={Link}
+                to="/dashboard"
                 variant="h2"
                 sx={{
                   fontWeight: 600,
                   fontSize: '1.2rem',
                   color: 'primary.main',
-                  // ml: 10, // ❌ remove this as it pushes it too far right
-                  // mt: 1,  // ❌ remove unnecessary top margin
                   whiteSpace: 'nowrap',
-                  mr: 5,
+                  textDecoration: 'none',
+                  cursor: 'pointer',
                 }}
               >
                 iMIZAN
@@ -107,14 +105,16 @@ const Sidebar = (props) => {
           width: '100%',
         }}
       >
-        <Logo />
         <Typography
+          component={Link}
+          to="/dashboard"
           variant="h6"
           sx={{
             fontWeight: 600,
             fontSize: '1.2rem',
             color: 'primary.main',
-            ml: 1,
+            textDecoration: 'none',
+            cursor: 'pointer',
           }}
         >
           iMIZAN
