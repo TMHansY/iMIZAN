@@ -1,5 +1,8 @@
 import asyncHandler from "express-async-handler";
 import Exam from "./../models/examModel.js";
+import Question from "./../models/quesModel.js";
+import Result from "./../models/resultModel.js";
+import CheatingLog from "./../models/cheatingLogModel.js";
 
 // @desc Get all exams
 // @route GET /api/exams
@@ -69,7 +72,13 @@ const DeleteExamById = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Exam not found");
   }
-  console.log("deleted exam", exam);
+
+  // Clean up everything tied to this exam so nothing orphaned is left behind
+  await Question.deleteMany({ examId });
+  await Result.deleteMany({ examId });
+  await CheatingLog.deleteMany({ examId });
+
+  console.log("deleted exam and related data", exam);
   res.status(200).json(exam);
 });
 
