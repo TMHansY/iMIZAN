@@ -26,6 +26,10 @@ const resultSchema = mongoose.Schema(
       required: true,
       default: 0,
     },
+    timeTakenSeconds: {
+      type: Number,
+      default: null,
+    },
     showToStudent: {
       type: Boolean,
       default: false,

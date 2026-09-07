@@ -20,6 +20,10 @@ const examSchema = mongoose.Schema(
       required: true,
       default: 1,
     },
+    allowReview: {
+      type: Boolean,
+      default: false,
+    },
     liveDate: {
       type: Date,
       required: true,

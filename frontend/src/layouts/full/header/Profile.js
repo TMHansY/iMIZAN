@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import { IconListCheck, IconMail, IconUser } from '@tabler/icons-react';
+import { IconListCheck, IconUser } from '@tabler/icons-react';
 
 import ProfileImg from 'src/assets/images/profile/user-1.jpg';
 
@@ -86,20 +86,14 @@ const Profile = () => {
           },
         }}
       >
-        <MenuItem component={Link} to="/user/profile">
+        <MenuItem component={Link} to="/user/account">
           <ListItemIcon>
             <IconUser width={20} />
           </ListItemIcon>
-          <ListItemText>My Profile</ListItemText>
-        </MenuItem>
-        <MenuItem component={Link} to="/user/account">
-          <ListItemIcon>
-            <IconMail width={20} />
-          </ListItemIcon>
           <ListItemText>My Account</ListItemText>
         </MenuItem>
-        <MenuItem>
-          <ListItemIcon component={Link} to="/user/tasks">
+        <MenuItem component={Link} to="/user/tasks">
+          <ListItemIcon>
             <IconListCheck width={20} />
           </ListItemIcon>
           <ListItemText>My Tasks</ListItemText>

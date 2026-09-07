@@ -14,6 +14,7 @@ export const apiSlice = createApi({
   }),
 
   tagTypes: ['User'],
+  refetchOnMountOrArgChange: true,
   // it like a prent to other api
   // it a build in builder
   endpoints: (builder) => ({}),

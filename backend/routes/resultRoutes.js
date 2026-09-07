@@ -8,6 +8,10 @@ import {
   getAllResults,
   getAttemptCount,
   setResultDecision,
+  getResultById,
+  setExamResultsVisibility,
+  getMyExamStatus,
+  getPendingReviewSummary,
 } from "../controllers/resultController.js";
 
 const resultRoutes = express.Router();
@@ -38,5 +42,17 @@ resultRoutes.put(
 
 // Set lecturer decision for a result
 resultRoutes.put("/results/:resultId/decision", setResultDecision);
+
+// Get a single result by ID (for review)
+resultRoutes.get("/results/single/:resultId", getResultById);
+
+// Set visibility for all results of a specific exam (for lecturers)
+resultRoutes.put("/results/exam/:examId/visibility", setExamResultsVisibility);
+
+// Get per-exam status summary for the current student
+resultRoutes.get("/results/my-status", getMyExamStatus);
+
+// Get summary of submissions pending lecturer review
+resultRoutes.get("/results/pending-review", getPendingReviewSummary);
 
 export default resultRoutes;

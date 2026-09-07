@@ -24,18 +24,16 @@ const userValidationSchema = yup.object({
     .string()
     .required('Confirm Password is required')
     .oneOf([yup.ref('password'), null], 'Password must match'),
-  role: yup.string().oneOf(['student', 'lecturer'], 'Invalid role').required('Role is required'),
 });
 
 const UserAccount = () => {
   const { userInfo } = useSelector((state) => state.auth);
 
   const initialUserValues = {
-    name: userInfo.name || '',
-    email: userInfo.email || '',
-    password: userInfo.password || '',
+    name: userInfo?.name || '',
+    email: userInfo?.email || '',
+    password: '',
     confirm_password: '',
-    role: userInfo.role || 'student',
   };
 
   const formik = useFormik({
@@ -50,17 +48,16 @@ const UserAccount = () => {
 
   const [updateProfile, { isLoading }] = useUpdateUserMutation();
 
-  const handleSubmit = async ({ name, email, password, confirm_password, role }) => {
+  const handleSubmit = async ({ name, email, password, confirm_password }) => {
     if (password !== confirm_password) {
       toast.error('Passwords do not match');
     } else {
       try {
         const res = await updateProfile({
-          _id: userInfo._id,
+          _id: userInfo?._id,
           name,
           email,
           password,
-          role,
         }).unwrap();
         dispatch(setCredentials(res));
         toast.success('Profile updated successfully');
@@ -102,6 +99,7 @@ const UserAccount = () => {
               <AuthUpdate
                 formik={formik}
                 onSubmit={handleSubmit}
+                isStudent={userInfo?.role === 'student'}
                 title={
                   <Typography variant="h3" textAlign="center" color="textPrimary" mb={1}>
                     Update Account Info

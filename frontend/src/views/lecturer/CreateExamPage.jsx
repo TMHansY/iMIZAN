@@ -43,6 +43,7 @@ const CreateExamPage = () => {
     liveDate: '',
     deadDate: '',
     maxAttempts: 1,
+    allowReview: false,
   };
 
   const handleSubmit = async (values) => {

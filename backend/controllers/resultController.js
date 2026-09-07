@@ -9,7 +9,8 @@ const attachStatus = (result) => {
   const obj = result.toObject ? result.toObject() : result;
   const status =
     obj.lecturerDecision || (obj.percentage >= PASS_THRESHOLD_PERCENTAGE ? 'pass' : 'fail');
-  return { ...obj, status };
+  const answers = obj.answers instanceof Map ? Object.fromEntries(obj.answers) : obj.answers;
+  return { ...obj, status, answers };
 };
 
 // @desc    Get number of attempts a student has used for an exam
@@ -43,7 +44,7 @@ const getAttemptCount = asyncHandler(async (req, res) => {
 // @route   POST /api/results
 // @access  Private
 const saveResult = asyncHandler(async (req, res) => {
-  const { examId, answers } = req.body;
+  const { examId, answers, timeTakenSeconds } = req.body;
 
   if (!examId || !answers) {
     res.status(400);
@@ -97,6 +98,7 @@ const saveResult = asyncHandler(async (req, res) => {
     answers: new Map(Object.entries(answers)),
     totalMarks,
     percentage,
+    timeTakenSeconds,
     showToStudent: false, // Default to false, lecturer can change this
   });
 
@@ -133,6 +135,33 @@ const getUserResults = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: results.map(attachStatus),
+  });
+});
+
+// @desc    Get a single result by ID (for review)
+// @route   GET /api/users/results/single/:resultId
+// @access  Private
+const getResultById = asyncHandler(async (req, res) => {
+  const { resultId } = req.params;
+
+  const result = await Result.findById(resultId);
+
+  if (!result) {
+    res.status(404);
+    throw new Error("Result not found");
+  }
+
+  const isOwner = result.userId.toString() === req.user._id.toString();
+  const isLecturer = req.user.role === "lecturer";
+
+  if (!isOwner && !isLecturer) {
+    res.status(403);
+    throw new Error("Not authorized to view this result");
+  }
+
+  res.status(200).json({
+    success: true,
+    data: attachStatus(result),
   });
 });
 
@@ -206,6 +235,79 @@ const setResultDecision = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Set visibility for all results of a specific exam
+// @route   PUT /api/users/results/exam/:examId/visibility
+// @access  Private (Lecturer only)
+const setExamResultsVisibility = asyncHandler(async (req, res) => {
+  const { examId } = req.params;
+  const { showToStudent } = req.body;
+
+  if (req.user.role !== "lecturer") {
+    res.status(403);
+    throw new Error("Not authorized to change result visibility");
+  }
+
+  if (typeof showToStudent !== "boolean") {
+    res.status(400);
+    throw new Error("showToStudent must be true or false");
+  }
+
+  const updateResult = await Result.updateMany({ examId }, { showToStudent });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      matchedCount: updateResult.matchedCount,
+      modifiedCount: updateResult.modifiedCount,
+    },
+  });
+});
+
+// @desc    Get a per-exam status summary for the current student (for notifications)
+// @route   GET /api/users/results/my-status
+// @access  Private
+const getMyExamStatus = asyncHandler(async (req, res) => {
+  const results = await Result.find({ userId: req.user._id }).sort({ createdAt: -1 });
+
+  const statusByExam = {};
+  for (const r of results) {
+    if (!statusByExam[r.examId]) {
+      statusByExam[r.examId] = {
+        examId: r.examId,
+        attemptsUsed: 0,
+        latestShowToStudent: r.showToStudent,
+        latestResultId: r._id,
+      };
+    }
+    statusByExam[r.examId].attemptsUsed += 1;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: Object.values(statusByExam),
+  });
+});
+
+// @desc    Get a summary of submissions pending lecturer review
+// @route   GET /api/users/results/pending-review
+// @access  Private (Lecturer only)
+const getPendingReviewSummary = asyncHandler(async (req, res) => {
+  if (req.user.role !== "lecturer") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const pendingResults = await Result.aggregate([
+    { $match: { lecturerDecision: null } },
+    { $group: { _id: "$examId", count: { $sum: 1 } } },
+  ]);
+
+  res.status(200).json({
+    success: true,
+    data: pendingResults.map((r) => ({ examId: r._id, pendingCount: r.count })),
+  });
+});
+
 export {
   saveResult,
   getResultsByExamId,
@@ -214,4 +316,8 @@ export {
   getAllResults,
   getAttemptCount,
   setResultDecision,
+  getResultById,
+  setExamResultsVisibility,
+  getMyExamStatus,
+  getPendingReviewSummary,
 };

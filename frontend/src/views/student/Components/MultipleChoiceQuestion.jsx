@@ -16,7 +16,12 @@ import { useNavigate, useParams } from 'react-router';
 import axiosInstance from '../../../axios';
 import { toast } from 'react-toastify';
 
-export default function MultipleChoiceQuestion({ questions, saveUserTestScore, submitTest }) {
+export default function MultipleChoiceQuestion({
+  questions,
+  saveUserTestScore,
+  submitTest,
+  examStartTime,
+}) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [score, setScore] = useState(0);
@@ -69,11 +74,16 @@ export default function MultipleChoiceQuestion({ questions, saveUserTestScore, s
         }
 
         // Send results to the backend
+        const timeTakenSeconds = examStartTime
+          ? Math.round((Date.now() - examStartTime) / 1000)
+          : null;
+
         await axiosInstance.post(
           '/api/users/results',
           {
             examId,
             answers: answersObject,
+            timeTakenSeconds,
           },
           {
             withCredentials: true,

@@ -14,6 +14,7 @@ import { useCheatingLog } from 'src/context/CheatingLogContext';
 
 const TestPage = () => {
   const { examId, testId } = useParams();
+  const [examStartTime] = useState(() => Date.now());
   const [selectedExam, setSelectedExam] = useState(null);
   const [examDurationInSeconds, setExamDurationInSeconds] = useState(0);
   const { data: userExamdata, isLoading: isExamsLoading } = useGetExamsQuery();
@@ -120,6 +121,7 @@ const TestPage = () => {
                     submitTest={handleTestSubmission}
                     questions={data}
                     saveUserTestScore={saveUserTestScore}
+                    examStartTime={examStartTime}
                   />
                 )}
               </Box>

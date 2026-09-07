@@ -9,11 +9,13 @@ import {
   Select,
   MenuItem,
   Stack,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 
-const CreateExam = ({ formik, title, subtitle, subtext }) => {
-  const { values, errors, touched, handleBlur, handleChange, handleSubmit } = formik;
+const CreateExam = ({ formik, title, subtitle, subtext, submitLabel = 'Create Exam' }) => {
+  const { values, errors, touched, handleBlur, handleChange, handleSubmit, setFieldValue } = formik;
 
   return (
     <>
@@ -83,6 +85,18 @@ const CreateExam = ({ formik, title, subtitle, subtext }) => {
         </Stack>
 
         <Stack mb={3}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={Boolean(values.allowReview)}
+                onChange={(e) => setFieldValue('allowReview', e.target.checked)}
+              />
+            }
+            label="Allow students to review their answers after the exam"
+          />
+        </Stack>
+
+        <Stack mb={3}>
           <CustomTextField
             id="liveDate"
             name="liveDate"
@@ -127,7 +141,7 @@ const CreateExam = ({ formik, title, subtitle, subtext }) => {
           disabled={formik.isSubmitting}
           onClick={handleSubmit}
         >
-          Create Exam
+          {submitLabel}
         </Button>
       </Box>
 

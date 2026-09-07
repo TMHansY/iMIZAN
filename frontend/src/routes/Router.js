@@ -22,6 +22,7 @@ const TestPage = Loadable(lazy(() => import('./../views/student/TestPage')));
 const ExamPage = Loadable(lazy(() => import('./../views/student/ExamPage')));
 const ExamDetails = Loadable(lazy(() => import('./../views/student/ExamDetails')));
 const ResultPage = Loadable(lazy(() => import('./../views/student/ResultPage')));
+const ReviewPage = Loadable(lazy(() => import('./../views/student/ReviewPage')));
 //Auth Routes
 const Error = Loadable(lazy(() => import('../views/authentication/Error')));
 const Register = Loadable(lazy(() => import('../views/authentication/Register')));
@@ -30,6 +31,7 @@ const UserAccount = Loadable(lazy(() => import('../views/authentication/UserAcco
 
 // Lecturer Routes
 const CreateExamPage = Loadable(lazy(() => import('./../views/lecturer/CreateExamPage')));
+const EditExamPage = Loadable(lazy(() => import('./../views/lecturer/EditExamPage')));
 const ExamLogPage = Loadable(lazy(() => import('./../views/lecturer/ExamLogPage')));
 const AddQuestions = Loadable(lazy(() => import('./../views/lecturer/AddQuestions')));
 const PrivateRoute = Loadable(lazy(() => import('src/views/authentication/PrivateRoute')));
@@ -50,8 +52,10 @@ const Router = createBrowserRouter(
           <Route path="/Success" exact={true} element={<Success />} />
           <Route path="/exam" exact={true} element={<ExamPage />} />
           <Route path="/result" exact={true} element={<ResultPage />} />
+          <Route path="/review/:resultId" exact={true} element={<ReviewPage />} />
           <Route path="" element={<LecturerRoute />}>
             <Route path="/create-exam" exact={true} element={<CreateExamPage />} />
+            <Route path="/edit-exam/:examId" exact={true} element={<EditExamPage />} />
             <Route path="/add-questions" exact={true} element={<AddQuestions />} />
             <Route path="/exam-log" exact={true} element={<ExamLogPage />} />
           </Route>

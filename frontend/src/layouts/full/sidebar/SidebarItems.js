@@ -17,7 +17,7 @@ const SidebarItems = () => {
         {Menuitems.map((item) => {
           // Check if the user is a student and if the item should be hidden
           if (
-            userInfo.role === 'student' &&
+            userInfo?.role === 'student' &&
             ['Create Exam', 'Add Questions', 'Exam Logs'].includes(item.title)
           ) {
             return null; // Don't render this menu item for students
@@ -25,7 +25,7 @@ const SidebarItems = () => {
           // {/********SubHeader**********/}
           if (item.subheader) {
             // Check if the user is a student and if the subheader should be hidden
-            if (userInfo.role === 'student' && item.subheader === 'Lecturer') {
+            if (userInfo?.role === 'student' && item.subheader === 'Lecturer') {
               return null; // Don't render the "Lecturer" subheader for students
             }
 

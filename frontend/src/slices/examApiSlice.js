@@ -45,6 +45,15 @@ export const examApiSlice = apiSlice.injectEndpoints({
         credentials: 'include',
       }),
     }),
+    // Update an existing exam
+    updateExam: builder.mutation({
+      query: ({ examId, ...data }) => ({
+        url: `${EXAMS_URL}/exam/${examId}`,
+        method: 'PUT',
+        body: data,
+        credentials: 'include',
+      }),
+    }),
   }),
 });
 
@@ -55,4 +64,5 @@ export const {
   useGetQuestionsQuery,
   useCreateQuestionMutation,
   useDeleteExamMutation,
+  useUpdateExamMutation,
 } = examApiSlice;

@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '../../lecturer/components/DeleteIcon';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import EditIcon from '@mui/icons-material/Edit';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import QuizIcon from '@mui/icons-material/Quiz';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -64,8 +65,21 @@ export default function ExamCard({ exam }) {
             <Typography gutterBottom variant="h5" component="div">
               {examName}
             </Typography>
-            {/* Delete icon at the right end - only show for lecturers */}
-            {isLecturer && <DeleteIcon examId={examId} />}
+            {/* Edit/Delete icons at the right end - only show for lecturers */}
+            {isLecturer && (
+              <Stack direction="row" spacing={0.5}>
+                <IconButton
+                  aria-label="edit"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/edit-exam/${examId}`);
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <DeleteIcon examId={examId} />
+              </Stack>
+            )}
             
           </Stack>
 

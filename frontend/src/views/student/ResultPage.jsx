@@ -37,11 +37,13 @@ import PageContainer from 'src/components/container/PageContainer';
 import DashboardCard from '../../components/shared/DashboardCard';
 import axiosInstance from '../../axios';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useLazyGetCheatingLogsQuery } from 'src/slices/cheatingLogApiSlice';
 
 const ResultPage = () => {
   const { userInfo } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -112,6 +114,23 @@ const ResultPage = () => {
     setSelectedExam(examId);
   };
 
+  const handleBulkVisibility = async (showToStudent) => {
+    if (selectedExam === 'all') return;
+    try {
+      const response = await axiosInstance.put(
+        `/api/users/results/exam/${selectedExam}/visibility`,
+        { showToStudent },
+        { withCredentials: true },
+      );
+      toast.success(
+        `${showToStudent ? 'Shown' : 'Hidden'} results for ${response.data.data.modifiedCount} student(s)`,
+      );
+      await refreshResults();
+    } catch (err) {
+      toast.error('Failed to update visibility for this exam');
+    }
+  };
+
   const handleOpenReview = async (result) => {
     setReviewResult(result);
     setReviewLog(null);
@@ -159,6 +178,13 @@ const ResultPage = () => {
     const matchesExam = selectedExam === 'all' || result.examId === selectedExam;
     return matchesSearch && matchesExam;
   });
+
+  const formatDuration = (seconds) => {
+    if (seconds === null || seconds === undefined) return '—';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   const StatusChip = ({ result }) => (
     <Chip
@@ -225,8 +251,10 @@ const ResultPage = () => {
                       <TableCell>Exam Name</TableCell>
                       <TableCell>MCQ Score</TableCell>
                       <TableCell>Total Score</TableCell>
+                      <TableCell>Time Taken</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Submission Date</TableCell>
+                      <TableCell>Review</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -246,10 +274,18 @@ const ResultPage = () => {
                             Total: {result.totalMarks}
                           </Typography>
                         </TableCell>
+                        <TableCell>{formatDuration(result.timeTakenSeconds)}</TableCell>
                         <TableCell>
                           <StatusChip result={result} />
                         </TableCell>
                         <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {exams.find((e) => e.examId === result.examId)?.allowReview && (
+                            <Button size="small" variant="outlined" onClick={() => navigate(`/review/${result._id}`)}>
+                              Review
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -296,7 +332,7 @@ const ResultPage = () => {
 
         <Grid item xs={12}>
           <DashboardCard title="Exam Results">
-            <Box mb={3} display="flex" gap={2}>
+            <Box mb={3} display="flex" gap={2} flexWrap="wrap" alignItems="center">
               <FormControl sx={{ minWidth: 200 }}>
                 <InputLabel>Select Exam</InputLabel>
                 <Select
@@ -326,6 +362,28 @@ const ResultPage = () => {
                   ),
                 }}
               />
+              {selectedExam !== 'all' && (
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="success"
+                    startIcon={<Visibility />}
+                    onClick={() => handleBulkVisibility(true)}
+                  >
+                    Show All Results
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="inherit"
+                    startIcon={<VisibilityOff />}
+                    onClick={() => handleBulkVisibility(false)}
+                  >
+                    Hide All Results
+                  </Button>
+                </Stack>
+              )}
             </Box>
 
             <TableContainer component={Paper}>
@@ -337,6 +395,7 @@ const ResultPage = () => {
                     <TableCell>Exam</TableCell>
                     <TableCell>MCQ Score</TableCell>
                     <TableCell>Total Score</TableCell>
+                    <TableCell>Time Taken</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Submission Date</TableCell>
                     <TableCell>Actions</TableCell>
@@ -362,6 +421,7 @@ const ResultPage = () => {
                           Total: {result.totalMarks}
                         </Typography>
                       </TableCell>
+                      <TableCell>{formatDuration(result.timeTakenSeconds)}</TableCell>
                       <TableCell>
                         <StatusChip result={result} />
                         {result.lecturerDecision && (
