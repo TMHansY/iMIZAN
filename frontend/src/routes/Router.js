@@ -28,6 +28,7 @@ const Error = Loadable(lazy(() => import('../views/authentication/Error')));
 const Register = Loadable(lazy(() => import('../views/authentication/Register')));
 const Login = Loadable(lazy(() => import('../views/authentication/Login')));
 const UserAccount = Loadable(lazy(() => import('../views/authentication/UserAccount')));
+const MyTasksPage = Loadable(lazy(() => import('../views/user/MyTasksPage')));
 
 // Lecturer Routes
 const CreateExamPage = Loadable(lazy(() => import('./../views/lecturer/CreateExamPage')));
@@ -68,6 +69,7 @@ const Router = createBrowserRouter(
       {/* User layout */}
       <Route path="/user" element={<FullLayout />}>
         <Route path="account" exact={true} element={<UserAccount />} />
+        <Route path="tasks" exact={true} element={<MyTasksPage />} />
       </Route>
 
       {/* Authentication layout */}

@@ -9,7 +9,7 @@ export const CheatingLogProvider = ({ children }) => {
     noFaceCount: 0,
     multipleFaceCount: 0,
     cellPhoneCount: 0,
-    prohibitedObjectCount: 0,
+    lookingAwayCount: 0,
     examId: '',
     username: userInfo?.name || '',
     email: userInfo?.email || '',
@@ -34,8 +34,8 @@ export const CheatingLogProvider = ({ children }) => {
         noFaceCount: Number(newLog.noFaceCount || prev.noFaceCount || 0),
         multipleFaceCount: Number(newLog.multipleFaceCount || prev.multipleFaceCount || 0),
         cellPhoneCount: Number(newLog.cellPhoneCount || prev.cellPhoneCount || 0),
-        prohibitedObjectCount: Number(
-          newLog.prohibitedObjectCount || prev.prohibitedObjectCount || 0,
+        lookingAwayCount: Number(
+          newLog.lookingAwayCount || prev.lookingAwayCount || 0,
         ),
       };
       console.log('Updated cheating log:', updatedLog); // Debug log
@@ -58,7 +58,7 @@ export const CheatingLogProvider = ({ children }) => {
       noFaceCount: 0,
       multipleFaceCount: 0,
       cellPhoneCount: 0,
-      prohibitedObjectCount: 0,
+      lookingAwayCount: 0,
       examId: examId,
       username: userInfo?.name || '',
       email: userInfo?.email || '',

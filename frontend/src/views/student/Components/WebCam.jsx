@@ -1,24 +1,35 @@
 import React, { useRef, useState, useEffect } from 'react';
-import * as tf from '@tensorflow/tfjs';
 import * as cocossd from '@tensorflow-models/coco-ssd';
+import * as faceapi from '@vladmandic/face-api';
 import Webcam from 'react-webcam';
 import { drawRect } from './utilities';
 import { Box, Card } from '@mui/material';
 import swal from 'sweetalert';
 import { UploadClient } from '@uploadcare/upload-client';
 
-const client = new UploadClient({ 
+const client = new UploadClient({
   publicKey: 'ad3316af84d6a1176983',
   baseCDN: 'https://5u5k52y8w7.ucarecd.net',
 });
+
+// How far (as a ratio of eye distance) the nose can drift from center
+// before we consider the student's head turned away from the screen.
+const LOOK_AWAY_THRESHOLD = 0.16;
+// How long the head must stay turned away, continuously, before it counts
+// as a real "looking away" violation (filters out quick glances).
+const LOOK_AWAY_SUSTAIN_MS = 3000;
 
 export default function Home({ cheatingLog, incrementViolation }) {
   const webcamRef = useRef(null);
   const canvasRef = useRef(null);
   const [lastDetectionTime, setLastDetectionTime] = useState({});
   const [screenshots, setScreenshots] = useState([]);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
 
-  // Initialize screenshots array when component mounts
+  // Tracks how long the head has been continuously turned away.
+  // A ref (not state) since it's updated every tick and shouldn't trigger renders.
+  const lookAwayStartRef = useRef(null);
+
   useEffect(() => {
     if (cheatingLog && cheatingLog.screenshots) {
       setScreenshots(cheatingLog.screenshots);
@@ -30,7 +41,7 @@ export default function Home({ cheatingLog, incrementViolation }) {
 
     if (
       !video ||
-      video.readyState !== 4 || // ensure video is ready
+      video.readyState !== 4 ||
       video.videoWidth === 0 ||
       video.videoHeight === 0
     ) {
@@ -49,19 +60,15 @@ export default function Home({ cheatingLog, incrementViolation }) {
     const file = dataURLtoFile(dataUrl, `cheating_${Date.now()}.jpg`);
 
     try {
-      const result = await client.uploadFile(file, {store: true});
-      console.log('✅ Full upload result:', JSON.stringify(result, null, 2));
-      //console.log('✅ Uploaded to Uploadcare:', result.cdnUrl);
-      
+      const result = await client.uploadFile(file, { store: true });
+
       const screenshot = {
         url: result.cdnUrl,
         type: type,
-        detectedAt: new Date()
+        detectedAt: new Date(),
       };
 
-      // Update local screenshots state
-      setScreenshots(prev => [...prev, screenshot]);
-      
+      setScreenshots((prev) => [...prev, screenshot]);
       return screenshot;
     } catch (error) {
       console.error('❌ Upload failed:', error);
@@ -76,31 +83,8 @@ export default function Home({ cheatingLog, incrementViolation }) {
     if (now - lastTime >= 3000) {
       setLastDetectionTime((prev) => ({ ...prev, [type]: now }));
 
-      // Capture and upload screenshot
       const screenshot = await captureScreenshotAndUpload(type);
-
-      console.log('Incrementing violation:', type, 'screenshot success:', !!screenshot);
       incrementViolation(type, screenshot);
-      /* newer....const updatedLog = {
-        ...cheatingLog,
-        [`${type}Count`]: (cheatingLog[`${type}Count`] || 0) + 1,
-        screenshots: screenshot
-          ? [...(cheatingLog.screenshots || []), screenshot]
-          : (cheatingLog.screenshots || []),
-      };
-      console.log('Updating cheating log with:', updatedLog);
-      updateCheatingLog(updatedLog);
-       old... if (screenshot) {
-        // Update cheating log with new count and screenshot
-        const updatedLog = {
-          ...cheatingLog,
-          [`${type}Count`]: (cheatingLog[`${type}Count`] || 0) + 1,
-          screenshots: [...(cheatingLog.screenshots || []), screenshot]
-        };
-
-        console.log('Updating cheating log with:', updatedLog);
-        updateCheatingLog(updatedLog);
-      } */
 
       switch (type) {
         case 'noFace':
@@ -112,8 +96,8 @@ export default function Home({ cheatingLog, incrementViolation }) {
         case 'cellPhone':
           swal('Cell Phone Detected', 'Warning Recorded', 'warning');
           break;
-        case 'prohibitedObject':
-          swal('Prohibited Object Detected', 'Warning Recorded', 'warning');
+        case 'lookingAway':
+          swal('Please Face the Screen', 'Warning Recorded', 'warning');
           break;
         default:
           break;
@@ -121,60 +105,120 @@ export default function Home({ cheatingLog, incrementViolation }) {
     }
   };
 
-  const runCoco = async () => {
+  const loadModels = async () => {
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
+    ]);
+  };
+
+  const runDetectionLoop = async () => {
     try {
-      const net = await cocossd.load();
-      console.log('AI model loaded.');
-      setInterval(() => detect(net), 1000);
+      const cocoNet = await cocossd.load();
+      await loadModels();
+      setModelsLoaded(true);
+      console.log('AI models loaded.');
+      setInterval(() => detect(cocoNet), 1000);
     } catch (error) {
-      console.error('Error loading model:', error);
-      swal('Error', 'Failed to load AI model. Please refresh the page.', 'error');
+      console.error('Error loading models:', error);
+      swal('Error', 'Failed to load AI models. Please refresh the page.', 'error');
     }
   };
 
-  const detect = async (net) => {
-    if (webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4) {
-      const video = webcamRef.current.video;
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
+  // Checks whether the head is turned away from center using landmark positions.
+  // Returns true if turned beyond the threshold, false if roughly facing forward.
+  const isLookingAway = (landmarks) => {
+    const leftEye = landmarks.getLeftEye();
+    const rightEye = landmarks.getRightEye();
+    const nose = landmarks.getNose();
 
-      webcamRef.current.video.width = videoWidth;
-      webcamRef.current.video.height = videoHeight;
-      canvasRef.current.width = videoWidth;
-      canvasRef.current.height = videoHeight;
+    const avgX = (points) => points.reduce((sum, p) => sum + p.x, 0) / points.length;
 
-      try {
-        const obj = await net.detect(video);
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        drawRect(obj, ctx);
+    const leftEyeX = avgX(leftEye);
+    const rightEyeX = avgX(rightEye);
+    const noseX = avgX(nose);
 
-        let person_count = 0;
-        let faceDetected = false;
+    const eyeMidX = (leftEyeX + rightEyeX) / 2;
+    const eyeDistance = Math.abs(rightEyeX - leftEyeX);
 
-        obj.forEach((element) => {
-          const detectedClass = element.class;
-          console.log('Detected:', detectedClass);
+    if (eyeDistance === 0) return false;
 
-          if (detectedClass === 'cell phone') handleDetection('cellPhone');
-          if (detectedClass === 'book' || detectedClass === 'laptop')
-            handleDetection('prohibitedObject');
-          if (detectedClass === 'person') {
-            faceDetected = true;
-            person_count++;
-            if (person_count > 1) handleDetection('multipleFace');
+    const offsetRatio = Math.abs(noseX - eyeMidX) / eyeDistance;
+    return offsetRatio > LOOK_AWAY_THRESHOLD;
+  };
+
+  const detect = async (cocoNet) => {
+    if (
+      !webcamRef.current ||
+      !webcamRef.current.video ||
+      webcamRef.current.video.readyState !== 4
+    ) {
+      return;
+    }
+
+    const video = webcamRef.current.video;
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+
+    webcamRef.current.video.width = videoWidth;
+    webcamRef.current.video.height = videoHeight;
+    canvasRef.current.width = videoWidth;
+    canvasRef.current.height = videoHeight;
+
+    // --- coco-ssd: cell phone + multiple person detection only ---
+    try {
+      const objects = await cocoNet.detect(video);
+      const ctx = canvasRef.current.getContext('2d');
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      drawRect(objects, ctx);
+
+      let personCount = 0;
+      objects.forEach((element) => {
+        if (element.class === 'cell phone') handleDetection('cellPhone');
+        if (element.class === 'person') {
+          personCount++;
+          if (personCount > 1) handleDetection('multipleFace');
+        }
+      });
+    } catch (error) {
+      console.error('Error during object detection:', error);
+    }
+
+    // --- face-api.js: real face presence + looking-away detection ---
+    try {
+      const faceResult = await faceapi
+        .detectSingleFace(
+          video,
+          new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }),
+        )
+        .withFaceLandmarks(true);
+
+      if (!faceResult) {
+        handleDetection('noFace');
+        lookAwayStartRef.current = null;
+      } else {
+        const turnedAway = isLookingAway(faceResult.landmarks);
+
+        if (turnedAway) {
+          if (lookAwayStartRef.current === null) {
+            lookAwayStartRef.current = Date.now();
+          } else if (Date.now() - lookAwayStartRef.current >= LOOK_AWAY_SUSTAIN_MS) {
+            handleDetection('lookingAway');
+            // Reset so it takes another full sustained period before re-logging
+            lookAwayStartRef.current = Date.now();
           }
-        });
-
-        if (!faceDetected) handleDetection('noFace');
-      } catch (error) {
-        console.error('Error during detection:', error);
+        } else {
+          lookAwayStartRef.current = null;
+        }
       }
+    } catch (error) {
+      console.error('Error during face detection:', error);
     }
   };
 
   useEffect(() => {
-    runCoco();
+    runDetectionLoop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -212,7 +256,6 @@ export default function Home({ cheatingLog, incrementViolation }) {
   );
 }
 
-// Helper to convert base64 to File
 function dataURLtoFile(dataUrl, fileName) {
   const arr = dataUrl.split(',');
   const mime = arr[0].match(/:(.*?);/)[1];
