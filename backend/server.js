@@ -49,7 +49,7 @@ if (process.env.NODE_ENV === "production") {
   // if we get an routes that are not define by us we show then index html file
   // every enpoint that is not api/users go to this index file
   app.get("*", (req, res) =>
-    res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"))
+    res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"))
   );
 } else {
   app.get("/", (req, res) => {
