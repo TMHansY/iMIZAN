@@ -48,7 +48,7 @@ const Router = createBrowserRouter(
       <Route path="" element={<PrivateRoute />} errorElement={<Error />}>
         {/* // Main layout */}
         <Route path="/" element={<FullLayout />}>
-          <Route index={true} path="/" element={<Navigate to="/dashboard" />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" exact={true} element={<Dashboard />} />
           <Route path="/sample-page" exact={true} element={<SamplePage />} />
           <Route path="/Success" exact={true} element={<Success />} />
