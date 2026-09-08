@@ -45,7 +45,7 @@ const Router = createBrowserRouter(
     // they going to be child of our main App component
     <>
       {/* // Private Routes */}
-      <Route path="" element={<PrivateRoute />}>
+      <Route path="" element={<PrivateRoute />} errorElement={<Error />}>
         {/* // Main layout */}
         <Route path="/" element={<FullLayout />}>
           <Route index={true} path="/" element={<Navigate to="/dashboard" />} />

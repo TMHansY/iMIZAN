@@ -1,10 +1,17 @@
-import React, { Suspense } from "react";
+import React, { Suspense } from 'react';
+import { Box, CircularProgress } from '@mui/material';
 
 const Loadable = (Component) => (props) =>
-(
-  <Suspense>
-    <Component {...props} />
-  </Suspense>
-);
+  (
+    <Suspense
+      fallback={
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <Component {...props} />
+    </Suspense>
+  );
 
 export default Loadable;

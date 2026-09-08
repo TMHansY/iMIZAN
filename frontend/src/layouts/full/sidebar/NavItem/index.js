@@ -1,14 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { NavLink } from 'react-router-dom';
-// mui imports
 import {
   ListItemIcon,
-  ListItem,
+  ListItemButton,
+  ListItemText,
   List,
   styled,
-  ListItemText,
-  useTheme
+  useTheme,
 } from '@mui/material';
 
 const NavItem = ({ item, level, pathDirect, onClick }) => {
@@ -16,14 +15,13 @@ const NavItem = ({ item, level, pathDirect, onClick }) => {
   const theme = useTheme();
   const itemIcon = <Icon stroke={1.5} size="1.3rem" />;
 
-  const ListItemStyled = styled(ListItem)(() => ({
+  const ListItemStyled = styled(ListItemButton)(() => ({
     whiteSpace: 'nowrap',
     marginBottom: '2px',
     padding: '8px 10px',
     borderRadius: '8px',
     backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
-    color:
-      theme.palette.text.secondary,
+    color: theme.palette.text.secondary,
     paddingLeft: '10px',
     '&:hover': {
       backgroundColor: theme.palette.primary.light,
@@ -42,14 +40,12 @@ const NavItem = ({ item, level, pathDirect, onClick }) => {
   return (
     <List component="li" disablePadding key={item.id}>
       <ListItemStyled
-        button
-        component={item.external ? 'a' : NavLink}
-        to={item.href}
-        href={item.external ? item.href : ''}
         disabled={item.disabled}
         selected={pathDirect === item.href}
-        target={item.external ? '_blank' : ''}
         onClick={onClick}
+        {...(item.external
+          ? { component: 'a', href: item.href, target: '_blank' }
+          : { component: NavLink, to: item.href })}
       >
         <ListItemIcon
           sx={{
