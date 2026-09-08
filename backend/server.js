@@ -44,7 +44,7 @@ app.use("/api/users", resultRoutes);
 if (process.env.NODE_ENV === "production") {
   const __dirname = path.resolve();
   // we making front build folder static to serve from this app
-  app.use(express.static(path.join(__dirname, "/frontend/dist")));
+  app.use(express.static(path.join(__dirname, "/frontend/build")));
 
   // if we get an routes that are not define by us we show then index html file
   // every enpoint that is not api/users go to this index file
@@ -53,7 +53,7 @@ if (process.env.NODE_ENV === "production") {
   );
 } else {
   app.get("/", (req, res) => {
-    res.send("<h1>server is running </h1>");
+    res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"))
   });
 }
 
