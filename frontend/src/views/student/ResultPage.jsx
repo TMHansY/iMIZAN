@@ -31,6 +31,8 @@ import {
   Divider,
 } from '@mui/material';
 import { Visibility, VisibilityOff, Search } from '@mui/icons-material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import CloseIcon from '@mui/icons-material/Close';
 import PageContainer from 'src/components/container/PageContainer';
@@ -50,6 +52,7 @@ const ResultPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedExam, setSelectedExam] = useState('all');
   const [exams, setExams] = useState([]);
+  const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   // Review dialog state
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -172,12 +175,40 @@ const ResultPage = () => {
   };
 
   const filteredResults = results.filter((result) => {
+    const examName = exams.find((e) => e.examId === result.examId)?.examName || '';
     const matchesSearch =
       result.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      result.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      result.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      examName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesExam = selectedExam === 'all' || result.examId === selectedExam;
     return matchesSearch && matchesExam;
   });
+
+  const groupedResults = React.useMemo(() => {
+    const groups = {};
+    filteredResults.forEach((result) => {
+      const key = `${result.examId}_${result.userId?._id}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(result);
+    });
+    return Object.values(groups).map((attempts) => {
+      const sorted = [...attempts].sort((a, b) => a.attemptNumber - b.attemptNumber);
+      return {
+        key: `${sorted[0].examId}_${sorted[0].userId?._id}`,
+        latest: sorted[sorted.length - 1],
+        attempts: sorted,
+      };
+    });
+  }, [filteredResults]);
+
+  const toggleGroup = (key) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const formatDuration = (seconds) => {
     if (seconds === null || seconds === undefined) return '—';
@@ -244,11 +275,43 @@ const ResultPage = () => {
 
           <Grid item xs={12}>
             <DashboardCard title="My Results">
+              <Box mb={3} display="flex" gap={2} flexWrap="wrap">
+                <FormControl sx={{ minWidth: 200 }}>
+                  <InputLabel>Select Exam</InputLabel>
+                  <Select
+                    value={selectedExam}
+                    onChange={(e) => handleExamChange(e.target.value)}
+                    label="Select Exam"
+                  >
+                    <MenuItem value="all">All Exams</MenuItem>
+                    {exams.map((exam) => (
+                      <MenuItem key={exam.examId} value={exam.examId}>
+                        {exam.examName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Search"
+                  variant="outlined"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  sx={{ minWidth: 200 }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
                     <TableRow>
                       <TableCell>Exam Name</TableCell>
+                      <TableCell>Attempt</TableCell>
                       <TableCell>MCQ Score</TableCell>
                       <TableCell>Total Score</TableCell>
                       <TableCell>Time Taken</TableCell>
@@ -258,10 +321,13 @@ const ResultPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {results.map((result) => (
+                    {filteredResults.map((result) => (
                       <TableRow key={result._id}>
                         <TableCell>
                           {exams.find((e) => e.examId === result.examId)?.examName || 'Exam'}
+                        </TableCell>
+                        <TableCell>
+                          {result.attemptNumber} of {result.totalAttemptsForExam}
                         </TableCell>
                         <TableCell>
                           <Chip
@@ -390,9 +456,11 @@ const ResultPage = () => {
               <Table>
                 <TableHead>
                   <TableRow>
+                    <TableCell />
                     <TableCell>Student Name</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Exam</TableCell>
+                    <TableCell>Attempts</TableCell>
                     <TableCell>MCQ Score</TableCell>
                     <TableCell>Total Score</TableCell>
                     <TableCell>Time Taken</TableCell>
@@ -402,36 +470,13 @@ const ResultPage = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredResults.map((result) => (
-                    <TableRow key={result._id}>
-                      <TableCell>{result.userId?.name}</TableCell>
-                      <TableCell>{result.userId?.email}</TableCell>
-                      <TableCell>
-                        {exams.find((e) => e.examId === result.examId)?.examName ||
-                          'Unknown Exam'}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={`${result.percentage.toFixed(1)}%`}
-                          color={result.percentage >= 70 ? 'success' : 'warning'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="textSecondary">
-                          Total: {result.totalMarks}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{formatDuration(result.timeTakenSeconds)}</TableCell>
-                      <TableCell>
-                        <StatusChip result={result} />
-                        {result.lecturerDecision && (
-                          <Typography variant="caption" display="block" color="textSecondary">
-                            (manual)
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>
+                  {groupedResults.map((group) => {
+                    const isExpanded = expandedGroups.has(group.key);
+                    const examName =
+                      exams.find((e) => e.examId === group.latest.examId)?.examName || 'Unknown Exam';
+
+                    const renderActionCells = (result) => (
+                      <>
                         <IconButton
                           onClick={() => handleToggleVisibility(result._id)}
                           color={result.showToStudent ? 'success' : 'default'}
@@ -445,9 +490,94 @@ const ResultPage = () => {
                         >
                           <RateReviewIcon />
                         </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </>
+                    );
+
+                    return (
+                      <React.Fragment key={group.key}>
+                        <TableRow>
+                          <TableCell>
+                            {group.attempts.length > 1 && (
+                              <IconButton size="small" onClick={() => toggleGroup(group.key)}>
+                                {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                              </IconButton>
+                            )}
+                          </TableCell>
+                          <TableCell>{group.latest.userId?.name}</TableCell>
+                          <TableCell>{group.latest.userId?.email}</TableCell>
+                          <TableCell>{examName}</TableCell>
+                          <TableCell>
+                            {group.attempts.length > 1 ? (
+                              <Chip
+                                size="small"
+                                label={`${group.attempts.length} attempts`}
+                                onClick={() => toggleGroup(group.key)}
+                                sx={{ cursor: 'pointer' }}
+                              />
+                            ) : (
+                              <Typography variant="body2" color="textSecondary">
+                                1 attempt
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={`${group.latest.percentage.toFixed(1)}%`}
+                              color={group.latest.percentage >= 70 ? 'success' : 'warning'}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="textSecondary">
+                              Total: {group.latest.totalMarks}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>{formatDuration(group.latest.timeTakenSeconds)}</TableCell>
+                          <TableCell>
+                            <StatusChip result={group.latest} />
+                            {group.latest.lecturerDecision && (
+                              <Typography variant="caption" display="block" color="textSecondary">
+                                (manual)
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>{new Date(group.latest.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>{renderActionCells(group.latest)}</TableCell>
+                        </TableRow>
+
+                        {isExpanded &&
+                          group.attempts.map((attempt) => (
+                            <TableRow key={attempt._id} sx={{ bgcolor: 'grey.50' }}>
+                              <TableCell />
+                              <TableCell colSpan={2}>
+                                <Typography variant="body2" color="textSecondary" pl={2}>
+                                  Attempt {attempt.attemptNumber} of {attempt.totalAttemptsForExam}
+                                </Typography>
+                              </TableCell>
+                              <TableCell />
+                              <TableCell />
+                              <TableCell>
+                                <Chip
+                                  size="small"
+                                  label={`${attempt.percentage.toFixed(1)}%`}
+                                  color={attempt.percentage >= 70 ? 'success' : 'warning'}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" color="textSecondary">
+                                  Total: {attempt.totalMarks}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>{formatDuration(attempt.timeTakenSeconds)}</TableCell>
+                              <TableCell>
+                                <StatusChip result={attempt} />
+                              </TableCell>
+                              <TableCell>{new Date(attempt.createdAt).toLocaleDateString()}</TableCell>
+                              <TableCell>{renderActionCells(attempt)}</TableCell>
+                            </TableRow>
+                          ))}
+                      </React.Fragment>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>

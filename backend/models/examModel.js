@@ -24,6 +24,10 @@ const examSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     liveDate: {
       type: Date,
       required: true,

@@ -3,12 +3,20 @@ import Exam from "./../models/examModel.js";
 import Question from "./../models/quesModel.js";
 import Result from "./../models/resultModel.js";
 import CheatingLog from "./../models/cheatingLogModel.js";
+import isExamOwner from "../utils/checkExamOwnership.js";
 
 // @desc Get all exams
 // @route GET /api/exams
 // @access Public
 const getExams = asyncHandler(async (req, res) => {
-  const exams = await Exam.find();
+  let exams;
+  if (req.user.role === "lecturer") {
+    exams = await Exam.find({
+      $or: [{ createdBy: req.user._id }, { createdBy: { $exists: false } }],
+    });
+  } else {
+    exams = await Exam.find();
+  }
   res.status(200).json(exams);
 });
 
@@ -16,7 +24,8 @@ const getExams = asyncHandler(async (req, res) => {
 // @route POST /api/exams
 // @access Private (admin)
 const createExam = asyncHandler(async (req, res) => {
-  const { examName, totalQuestions, duration, liveDate, deadDate, maxAttempts, allowReview } = req.body;
+  const { examName, totalQuestions, duration, liveDate, deadDate, maxAttempts, allowReview } =
+    req.body;
 
   const exam = new Exam({
     examName,
@@ -26,6 +35,7 @@ const createExam = asyncHandler(async (req, res) => {
     deadDate,
     maxAttempts,
     allowReview,
+    createdBy: req.user._id,
   });
 
   const createdExam = await exam.save();
@@ -43,13 +53,19 @@ const createExam = asyncHandler(async (req, res) => {
 // @access Private (lecturer)
 const updateExam = asyncHandler(async (req, res) => {
   const { examId } = req.params;
-  const { examName, totalQuestions, duration, liveDate, deadDate, maxAttempts, allowReview } = req.body;
+  const { examName, totalQuestions, duration, liveDate, deadDate, maxAttempts, allowReview } =
+    req.body;
 
   const exam = await Exam.findOne({ examId });
 
   if (!exam) {
     res.status(404);
     throw new Error("Exam not found");
+  }
+
+  if (!isExamOwner(exam, req.user)) {
+    res.status(403);
+    throw new Error("Not authorized to edit this exam");
   }
 
   exam.examName = examName ?? exam.examName;
@@ -67,11 +83,19 @@ const updateExam = asyncHandler(async (req, res) => {
 
 const DeleteExamById = asyncHandler(async (req, res) => {
   const { examId } = req.params;
-  const exam = await Exam.findOneAndDelete({ examId: examId });
+
+  const exam = await Exam.findOne({ examId });
   if (!exam) {
     res.status(404);
     throw new Error("Exam not found");
   }
+
+  if (!isExamOwner(exam, req.user)) {
+    res.status(403);
+    throw new Error("Not authorized to delete this exam");
+  }
+
+  await Exam.deleteOne({ examId });
 
   // Clean up everything tied to this exam so nothing orphaned is left behind
   await Question.deleteMany({ examId });

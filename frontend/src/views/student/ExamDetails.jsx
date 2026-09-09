@@ -137,7 +137,7 @@ export default function ExamDetails() {
           </Typography>
           <Typography variant="body1" color="text.secondary" mb={3}>
             This is a proctored multiple choice exam. Your webcam will monitor your session for
-            the entire duration to help ensure academic integrity.
+            the entire duration to help ensure academic integrity. The exam questions are sequential.
           </Typography>
 
           {/* Quick facts */}
