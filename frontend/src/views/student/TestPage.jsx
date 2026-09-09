@@ -11,6 +11,7 @@ import { useSaveCheatingLogMutation } from 'src/slices/cheatingLogApiSlice';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useCheatingLog } from 'src/context/CheatingLogContext';
+import axiosInstance from '../../axios';
 
 const TestPage = () => {
   const { examId, testId } = useParams();
@@ -23,6 +24,11 @@ const TestPage = () => {
   const [saveCheatingLogMutation] = useSaveCheatingLogMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMcqCompleted, setIsMcqCompleted] = useState(false);
+  const [answers, setAnswers] = useState({});
+
+  const recordAnswer = (questionId, optionId) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+  };
 
   useEffect(() => {
     if (userExamdata) {
@@ -57,6 +63,17 @@ const TestPage = () => {
     try {
       setIsSubmitting(true);
 
+      const timeTakenSeconds = Math.round((Date.now() - examStartTime) / 1000);
+
+      // Save whatever answers have been given so far — this is what actually
+      // gets scored, regardless of whether the student finished naturally or
+      // ran out of time partway through.
+      await axiosInstance.post(
+        '/api/users/results',
+        { examId, answers, timeTakenSeconds },
+        { withCredentials: true },
+      );
+
       // Make sure we have the latest user info in the log
       const updatedLog = {
         ...cheatingLog,
@@ -69,18 +86,17 @@ const TestPage = () => {
         tabSwitchCount: parseInt(cheatingLog.tabSwitchCount) || 0,
       };
 
-      console.log('Submitting cheating log:', updatedLog);
-
-      // Save the cheating log
-      const result = await saveCheatingLogMutation(updatedLog).unwrap();
-      console.log('Cheating log saved:', result);
+      await saveCheatingLogMutation(updatedLog).unwrap();
 
       toast.success('Test submitted successfully!');
       navigate('/Success');
     } catch (error) {
-      console.error('Error saving cheating log:', error);
+      console.error('Error submitting test:', error);
       toast.error(
-        error?.data?.message || error?.message || 'Failed to save test logs. Please try again.',
+        error?.response?.data?.message ||
+          error?.data?.message ||
+          error?.message ||
+          'Failed to submit test. Please try again.',
       );
     } finally {
       setIsSubmitting(false);
@@ -121,7 +137,7 @@ const TestPage = () => {
                     submitTest={handleTestSubmission}
                     questions={data}
                     saveUserTestScore={saveUserTestScore}
-                    examStartTime={examStartTime}
+                    recordAnswer={recordAnswer}
                   />
                 )}
               </Box>

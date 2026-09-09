@@ -3,44 +3,36 @@ import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
-import FormLabel from '@mui/material/FormLabel';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import { Container } from '@mui/material';
-import { useGetQuestionsQuery } from 'src/slices/examApiSlice';
-import { useNavigate, useParams } from 'react-router';
-import axiosInstance from '../../../axios';
-import { toast } from 'react-toastify';
 
 export default function MultipleChoiceQuestion({
   questions,
   saveUserTestScore,
   submitTest,
-  examStartTime,
+  recordAnswer,
 }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [score, setScore] = useState(0);
-  const [answers, setAnswers] = useState(new Map());
-  const navigate = useNavigate();
-  const { examId } = useParams();
 
   const [isLastQuestion, setIsLastQuestion] = useState(false);
-  const [isFinishTest, setisFinishTest] = useState(false);
 
   useEffect(() => {
     setIsLastQuestion(currentQuestion === questions.length - 1);
   }, [currentQuestion, questions.length]);
 
   const handleOptionChange = (event) => {
-    setSelectedOption(event.target.value);
+    const value = event.target.value;
+    setSelectedOption(value);
+    recordAnswer(questions[currentQuestion]._id, value);
   };
 
-  const handleNextQuestion = async () => {
+  const handleNextQuestion = () => {
     let isCorrect = false;
     const currentQuestionData = questions[currentQuestion];
 
@@ -51,58 +43,18 @@ export default function MultipleChoiceQuestion({
       }
     }
 
-    // Add answer to answers Map
-    setAnswers((prev) => {
-      const newAnswers = new Map(prev);
-      newAnswers.set(currentQuestionData._id, selectedOption);
-      return newAnswers;
-    });
-
     if (isCorrect) {
       setScore(score + 1);
       saveUserTestScore();
     }
 
     if (isLastQuestion) {
-      try {
-        // Convert Map to object for API
-        const answersObject = Object.fromEntries(answers);
-
-        // Add the current answer if it's the last question
-        if (selectedOption) {
-          answersObject[currentQuestionData._id] = selectedOption;
-        }
-
-        // Send results to the backend
-        const timeTakenSeconds = examStartTime
-          ? Math.round((Date.now() - examStartTime) / 1000)
-          : null;
-
-        await axiosInstance.post(
-          '/api/users/results',
-          {
-            examId,
-            answers: answersObject,
-            timeTakenSeconds,
-          },
-          {
-            withCredentials: true,
-          },
-        );
-
-        submitTest();
-        } catch (error) {
-          console.error('Error saving results:', error);
-          toast.error('Failed to save results');
-        }
+      submitTest();
+      return;
     }
 
     setSelectedOption(null);
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-    } else {
-      setisFinishTest(true);
-    }
+    setCurrentQuestion(currentQuestion + 1);
   };
 
   return (

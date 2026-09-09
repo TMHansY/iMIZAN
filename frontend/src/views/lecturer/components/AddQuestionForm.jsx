@@ -4,7 +4,8 @@ import {
   Button,
   TextField,
   FormControlLabel,
-  Checkbox,
+  Radio,
+  RadioGroup,
   Stack,
   Select,
   MenuItem,
@@ -28,8 +29,8 @@ const AddQuestionForm = () => {
   const [selectedExamId, setSelectedExamId] = useState('');
 
   const handleOptionChange = (index) => {
-    const updatedCorrectOptions = [...correctOptions];
-    updatedCorrectOptions[index] = !correctOptions[index];
+    const updatedCorrectOptions = [false, false, false, false];
+    updatedCorrectOptions[index] = true;
     setCorrectOptions(updatedCorrectOptions);
   };
 
@@ -86,21 +87,13 @@ const AddQuestionForm = () => {
       if (res) {
         toast.success('Question added successfully!!!');
       }
-      setQuestions([...questions, res]);
+      await refetchExistingQuestions();
       setNewQuestion('');
       setNewOptions(['', '', '', '']);
       setCorrectOptions([false, false, false, false]);
     } catch (err) {
       swal('', 'Failed to create question. Please try again.', 'error');
     }
-  };
-
-  const handleSubmitQuestions = async () => {
-    await refetchExistingQuestions();
-    setQuestions([]);
-    setNewQuestion('');
-    setNewOptions(['', '', '', '']);
-    setCorrectOptions([false, false, false, false]);
   };
 
   return (
@@ -171,8 +164,8 @@ const AddQuestionForm = () => {
                     }}
                   />
                   <FormControlLabel
-                    control={<Checkbox checked={option.isCorrect} disabled />}
-                    label="Correct"
+                    control={<Radio checked={option.isCorrect} disabled />}
+                    label="Correct Answer"
                     sx={{ whiteSpace: 'nowrap' }}
                   />
                 </Stack>
@@ -190,44 +183,38 @@ const AddQuestionForm = () => {
         sx={{ mb: 1 }}
       />
 
-      {newOptions.map((option, index) => (
-        <Stack
-          key={index}
-          direction="row"
-          justifyContent="space-between"
-          alignItems="center"
-          spacing={1}
-          mb={1}
-        >
-          <TextField
-            label={`Option ${index + 1}`}
-            value={newOptions[index]}
-            onChange={(e) => {
-              const updatedOptions = [...newOptions];
-              updatedOptions[index] = e.target.value;
-              setNewOptions(updatedOptions);
-            }}
-            fullWidth
-            sx={{ flex: '80%' }}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={correctOptions[index]}
-                onChange={() => handleOptionChange(index)}
-              />
-            }
-            label={`Correct Option ${index + 1}`}
-          />
-        </Stack>
-      ))}
+      <RadioGroup
+        value={correctOptions.findIndex((v) => v)}
+        onChange={(e) => handleOptionChange(Number(e.target.value))}
+      >
+        {newOptions.map((option, index) => (
+          <Stack
+            key={index}
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            spacing={1}
+            mb={1}
+          >
+            <TextField
+              label={`Option ${index + 1}`}
+              value={newOptions[index]}
+              onChange={(e) => {
+                const updatedOptions = [...newOptions];
+                updatedOptions[index] = e.target.value;
+                setNewOptions(updatedOptions);
+              }}
+              fullWidth
+              sx={{ flex: '80%' }}
+            />
+            <FormControlLabel value={index} control={<Radio />} label="Correct Answer" />
+          </Stack>
+        ))}
+      </RadioGroup>
 
       <Stack mt={2} direction="row" spacing={2}>
         <Button variant="outlined" onClick={handleAddQuestion} disabled={limitReached}>
           Add Question
-        </Button>
-        <Button variant="outlined" onClick={handleSubmitQuestions}>
-          Submit Questions
         </Button>
       </Stack>
     </div>
