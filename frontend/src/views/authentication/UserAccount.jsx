@@ -100,6 +100,7 @@ const UserAccount = () => {
                 formik={formik}
                 onSubmit={handleSubmit}
                 isStudent={userInfo?.role === 'student'}
+                isLecturer={userInfo?.role === 'lecturer'}
                 title={
                   <Typography variant="h3" textAlign="center" color="textPrimary" mb={1}>
                     Update Account Info

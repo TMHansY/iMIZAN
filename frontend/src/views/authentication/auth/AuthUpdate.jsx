@@ -4,7 +4,7 @@ import { Box, Typography, Button } from '@mui/material';
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 import { Stack } from '@mui/system';
 
-const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent }) => {
+const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent, isLecturer }) => {
   const { values, errors, touched, handleBlur, handleChange, handleSubmit } = formik;
   return (
     <>
@@ -39,7 +39,7 @@ const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent }) => {
             helperText={touched.name && errors.name ? errors.name : null}
             fullWidth
             required
-            disabled={isStudent}
+            disabled={isStudent || isLecturer}
           />
 
           <Typography
@@ -64,7 +64,6 @@ const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent }) => {
             helperText={touched.email && errors.email ? errors.email : null}
             required
             fullWidth
-            disabled={isStudent}
           />
 
           <Typography
