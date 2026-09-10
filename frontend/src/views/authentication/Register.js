@@ -7,10 +7,9 @@ import AuthRegister from './auth/AuthRegister';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useRegisterMutation } from './../../slices/usersApiSlice';
-import { setCredentials } from './../../slices/authSlice';
 import Loader from './Loader';
 
 const userValidationSchema = yup.object({
@@ -43,7 +42,6 @@ const Register = () => {
     },
   });
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [register, { isLoading }] = useRegisterMutation();
@@ -65,10 +63,10 @@ const Register = () => {
       toast.error('Passwords do not match');
     } else {
       try {
-        const res = await register({ name, email, password, role }).unwrap();
-        dispatch(setCredentials({ ...res }));
+        await register({ name, email, password, role }).unwrap();
         formik.resetForm();
 
+        toast.success('Account created! Please wait for an admin to approve your account before logging in.');
         navigate('/auth/login');
       } catch (err) {
         toast.error(err?.data?.message || err.error);

@@ -7,6 +7,7 @@ import {
   IconTypography,
   IconUserPlus,
   IconPlayerPlayFilled,
+  IconShieldCheck,
 } from '@tabler/icons-react';
 
 import { uniqueId } from 'lodash';
@@ -60,6 +61,16 @@ const Menuitems = [
     title: 'Exam Logs',
     icon: IconUserPlus,
     href: '/exam-log',
+  },
+  {
+    navlabel: true,
+    subheader: 'Admin',
+  },
+  {
+    id: uniqueId(),
+    title: 'Pending Approvals',
+    icon: IconShieldCheck,
+    href: '/admin/approvals',
   },
   // {
   //   id: uniqueId(),

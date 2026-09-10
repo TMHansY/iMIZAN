@@ -19,7 +19,12 @@ const userSchema = mongoose.Schema(
     },
     role: {
       type: String,
+      enum: ["student", "lecturer", "admin"],
       require: true,
+    },
+    isApproved: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -5,6 +5,9 @@ import {
   logoutUser,
   registerUser,
   updateUserProfile,
+  getPendingUsers,
+  approveUser,
+  rejectUser,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { createExam, getExams } from "../controllers/examController.js";
@@ -18,5 +21,10 @@ userRoutes
   .route("/profile")
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
+
+// Admin-only account approval routes
+userRoutes.get("/pending", protect, getPendingUsers);
+userRoutes.put("/:id/approve", protect, approveUser);
+userRoutes.delete("/:id/reject", protect, rejectUser);
 
 export default userRoutes;

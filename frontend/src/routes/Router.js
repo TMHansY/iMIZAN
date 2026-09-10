@@ -38,6 +38,8 @@ const ExamLogPage = Loadable(lazy(() => import('./../views/lecturer/ExamLogPage'
 const AddQuestions = Loadable(lazy(() => import('./../views/lecturer/AddQuestions')));
 const PrivateRoute = Loadable(lazy(() => import('src/views/authentication/PrivateRoute')));
 const LecturerRoute = Loadable(lazy(() => import('src/views/authentication/LecturerRoute')));
+const AdminRoute = Loadable(lazy(() => import('src/views/authentication/AdminRoute')));
+const PendingApprovals = Loadable(lazy(() => import('../views/admin/PendingApprovals')));
 
 const Router = createBrowserRouter(
   createRoutesFromElements(
@@ -60,6 +62,9 @@ const Router = createBrowserRouter(
             <Route path="/edit-exam/:examId" exact={true} element={<EditExamPage />} />
             <Route path="/add-questions" exact={true} element={<AddQuestions />} />
             <Route path="/exam-log" exact={true} element={<ExamLogPage />} />
+          </Route>
+          <Route path="" element={<AdminRoute />}>
+            <Route path="/admin/approvals" exact={true} element={<PendingApprovals />} />
           </Route>
         </Route>
         <Route path="/" element={<ExamLayout />}>

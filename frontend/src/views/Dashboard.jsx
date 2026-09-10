@@ -18,6 +18,7 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import QuizIcon from '@mui/icons-material/Quiz';
 import EditIcon from '@mui/icons-material/Edit';
+import HowToRegIcon from '@mui/icons-material/HowToReg';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from 'src/components/container/PageContainer';
@@ -41,13 +42,32 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { data: examsData, isLoading: examsLoading } = useGetExamsQuery();
   const isLecturer = userInfo?.role === 'lecturer';
+  const isAdmin = userInfo?.role === 'admin';
 
   const [upcomingExams, setUpcomingExams] = useState([]);
   const [latestResult, setLatestResult] = useState(null);
   const [pendingByExam, setPendingByExam] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isAdmin) {
+      const loadAdminSummary = async () => {
+        try {
+          const { data } = await axiosInstance.get('/api/users/pending', {
+            withCredentials: true,
+          });
+          setPendingUsers(data);
+        } catch (err) {
+          console.error('Failed to load dashboard summary:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadAdminSummary();
+      return;
+    }
+
     if (!examsData) return;
 
     const loadStudentSummary = async () => {
@@ -102,7 +122,7 @@ const Dashboard = () => {
     } else {
       loadStudentSummary();
     }
-  }, [examsData, isLecturer]);
+    }, [examsData, isLecturer, isAdmin]);
 
   const recentExams = [...(examsData || [])]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -110,11 +130,60 @@ const Dashboard = () => {
 
   const totalPending = pendingByExam.reduce((sum, e) => sum + e.pendingCount, 0);
 
-  if (examsLoading || loading) {
+  if ((!isAdmin && examsLoading) || loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress />
       </Box>
+    );
+  }
+
+  // --- Admin Dashboard ---
+  if (isAdmin) {
+    return (
+      <PageContainer title="Dashboard" description="Account approvals overview">
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <DashboardCard>
+              <Stack alignItems="center" spacing={1}>
+                <HowToRegIcon color="primary" fontSize="large" />
+                <Typography variant="h4">{pendingUsers.length}</Typography>
+                <Typography color="text.secondary">Pending Approvals</Typography>
+              </Stack>
+            </DashboardCard>
+          </Grid>
+
+          <Grid item xs={12} md={8}>
+            <DashboardCard title="Awaiting Approval">
+              {pendingUsers.length === 0 ? (
+                <Typography color="text.secondary">
+                  No accounts waiting — you're all caught up.
+                </Typography>
+              ) : (
+                <List disablePadding>
+                  {pendingUsers.map((user, index) => (
+                    <React.Fragment key={user._id}>
+                      {index > 0 && <Divider />}
+                      <ListItemButton
+                        onClick={() => navigate('/admin/approvals')}
+                        sx={{ py: 1.5 }}
+                      >
+                        <ListItemIcon>
+                          <HowToRegIcon color="action" />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={`${user.name} (${user.role})`}
+                          secondary={user.email}
+                        />
+                      </ListItemButton>
+                    </React.Fragment>
+                  ))}
+                </List>
+              )}
+            </DashboardCard>
+          </Grid>
+        </Grid>
+      </PageContainer>
     );
   }
 

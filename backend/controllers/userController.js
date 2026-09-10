@@ -7,6 +7,13 @@ const authUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user && (await user.matchPassword(password))) {
+    // isApproved === false explicitly blocks; undefined (legacy accounts)
+    // or true both pass through normally.
+    if (user.isApproved === false) {
+      res.status(403);
+      throw new Error("Your account is pending admin approval.");
+    }
+
     generateToken(res, user._id);
 
     res.status(201).json({
@@ -38,18 +45,13 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
     role,
+    isApproved: false,
   });
 
   if (user) {
-    generateToken(res, user._id);
-
+    // No token issued here — the account needs admin approval before login works.
     res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      password_encrypted: user.password,
-      message: "User Successfully created with role: " + user.role,
+      message: "Account created. Please wait for an admin to approve your account before logging in.",
     });
   } else {
     res.status(400);
@@ -100,10 +102,67 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error("User Not Found");
   }
 });
+// @desc    Get all accounts pending approval
+// @route   GET /api/users/pending
+// @access  Private (Admin only)
+const getPendingUsers = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const pendingUsers = await User.find({ isApproved: false }).select("-password");
+  res.status(200).json(pendingUsers);
+});
+
+// @desc    Approve a pending account
+// @route   PUT /api/users/:id/approve
+// @access  Private (Admin only)
+const approveUser = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  user.isApproved = true;
+  await user.save();
+
+  res.status(200).json({ message: `${user.email} approved.` });
+});
+
+// @desc    Reject (and remove) a pending account
+// @route   DELETE /api/users/:id/reject
+// @access  Private (Admin only)
+const rejectUser = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  await User.deleteOne({ _id: req.params.id });
+
+  res.status(200).json({ message: `${user.email} rejected and removed.` });
+});
+
 export {
   authUser,
   registerUser,
   logoutUser,
   getUserProfile,
   updateUserProfile,
+  getPendingUsers,
+  approveUser,
+  rejectUser,
 };
