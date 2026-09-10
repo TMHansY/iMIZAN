@@ -143,7 +143,9 @@ export default function Home({ cheatingLog, incrementViolation }) {
     if (
       !webcamRef.current ||
       !webcamRef.current.video ||
-      webcamRef.current.video.readyState !== 4
+      webcamRef.current.video.readyState !== 4 ||
+      webcamRef.current.video.videoWidth === 0 ||
+      webcamRef.current.video.videoHeight === 0
     ) {
       return;
     }
