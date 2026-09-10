@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import User from "./../models/userModel.js";
 import generateToken from "../utils/generateToken.js";
+import sendEmail from "../utils/sendEmail.js";
 
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -133,6 +134,12 @@ const approveUser = asyncHandler(async (req, res) => {
   user.isApproved = true;
   await user.save();
 
+  await sendEmail({
+    to: user.email,
+    subject: "Your iMIZAN account has been approved",
+    text: `Hi ${user.name},\n\nYour account has been approved. You can now log in at the iMIZAN platform.\n\n— iMIZAN`,
+  });
+
   res.status(200).json({ message: `${user.email} approved.` });
 });
 
@@ -151,11 +158,18 @@ const rejectUser = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 
+  const { name, email } = user;
+
   await User.deleteOne({ _id: req.params.id });
 
-  res.status(200).json({ message: `${user.email} rejected and removed.` });
-});
+  await sendEmail({
+    to: email,
+    subject: "Your iMIZAN account request was not approved",
+    text: `Hi ${name},\n\nYour account request was not approved. If you believe this is a mistake, please contact your administrator.\n\n— iMIZAN`,
+  });
 
+  res.status(200).json({ message: `${email} rejected and removed.` });
+});
 export {
   authUser,
   registerUser,

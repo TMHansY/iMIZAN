@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -12,49 +12,41 @@ import Stack from '@mui/material/Stack';
 
 export default function MultipleChoiceQuestion({
   questions,
-  saveUserTestScore,
+  currentQuestionIndex,
+  selectedOption,
+  onSelectOption,
+  onNext,
+  onPrevious,
+  allowBackNavigation,
+  isLastQuestion,
   submitTest,
-  recordAnswer,
+  saveUserTestScore,
 }) {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [score, setScore] = useState(0);
+  const currentQuestionData = questions[currentQuestionIndex];
 
-  const [isLastQuestion, setIsLastQuestion] = useState(false);
-
-  useEffect(() => {
-    setIsLastQuestion(currentQuestion === questions.length - 1);
-  }, [currentQuestion, questions.length]);
+  if (!currentQuestionData) {
+    return null;
+  }
 
   const handleOptionChange = (event) => {
-    const value = event.target.value;
-    setSelectedOption(value);
-    recordAnswer(questions[currentQuestion]._id, value);
+    onSelectOption(event.target.value);
   };
 
-  const handleNextQuestion = () => {
-    let isCorrect = false;
-    const currentQuestionData = questions[currentQuestion];
+  const checkIfCorrect = () => {
+    const correctOption = currentQuestionData.options.find((option) => option.isCorrect);
+    return correctOption && selectedOption && correctOption.id === selectedOption;
+  };
 
-    if (currentQuestionData && currentQuestionData.options) {
-      const correctOption = currentQuestionData.options.find((option) => option.isCorrect);
-      if (correctOption && selectedOption) {
-        isCorrect = correctOption.id === selectedOption;
-      }
-    }
-
-    if (isCorrect) {
-      setScore(score + 1);
+  const handleLinearNext = () => {
+    if (checkIfCorrect()) {
       saveUserTestScore();
     }
 
     if (isLastQuestion) {
       submitTest();
-      return;
+    } else {
+      onNext();
     }
-
-    setSelectedOption(null);
-    setCurrentQuestion(currentQuestion + 1);
   };
 
   return (
@@ -72,11 +64,11 @@ export default function MultipleChoiceQuestion({
           margin: '3px',
         }}
       >
-        <Typography s variant="h4" mb={3}>
-          Question {currentQuestion + 1}:
+        <Typography variant="h4" mb={3}>
+          Question {currentQuestionIndex + 1}:
         </Typography>
         <Typography variant="body1" mb={3}>
-          {questions[currentQuestion].question}
+          {currentQuestionData.question}
         </Typography>
         <Box mb={10}>
           <FormControl component="fieldset">
@@ -86,7 +78,7 @@ export default function MultipleChoiceQuestion({
               value={selectedOption}
               onChange={handleOptionChange}
             >
-              {questions[currentQuestion].options.map((option) => (
+              {currentQuestionData.options.map((option) => (
                 <FormControlLabel
                   key={option._id}
                   value={option._id}
@@ -97,17 +89,38 @@ export default function MultipleChoiceQuestion({
             </RadioGroup>
           </FormControl>
         </Box>
-        <Stack direction="row" spacing={2} justifyContent="space-between">
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleNextQuestion}
-            disabled={selectedOption === null}
-            style={{ marginLeft: 'auto' }}
-          >
-            {isLastQuestion ? 'Finish Test' : 'Next Question'}
-          </Button>
-        </Stack>
+
+        {allowBackNavigation ? (
+          <Stack direction="row" spacing={2} justifyContent="space-between">
+            <Button
+              variant="outlined"
+              onClick={onPrevious}
+              disabled={currentQuestionIndex === 0}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={onNext}
+              disabled={isLastQuestion}
+            >
+              Next Question
+            </Button>
+          </Stack>
+        ) : (
+          <Stack direction="row" spacing={2} justifyContent="space-between">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleLinearNext}
+              disabled={selectedOption === null}
+              style={{ marginLeft: 'auto' }}
+            >
+              {isLastQuestion ? 'Finish Test' : 'Next Question'}
+            </Button>
+          </Stack>
+        )}
       </CardContent>
     </Card>
   );

@@ -12,6 +12,7 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useCheatingLog } from 'src/context/CheatingLogContext';
 import axiosInstance from '../../axios';
+import { seededShuffle } from '../../utils/seededShuffle';
 
 const TestPage = () => {
   const { examId, testId } = useParams();
@@ -20,61 +21,87 @@ const TestPage = () => {
   const [examDurationInSeconds, setExamDurationInSeconds] = useState(0);
   const { data: userExamdata, isLoading: isExamsLoading } = useGetExamsQuery();
   const { userInfo } = useSelector((state) => state.auth);
-  const { cheatingLog, updateCheatingLog, resetCheatingLog, incrementViolation } = useCheatingLog();
+  const { cheatingLog, incrementViolation } = useCheatingLog();
   const [saveCheatingLogMutation] = useSaveCheatingLogMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isMcqCompleted, setIsMcqCompleted] = useState(false);
-  const [answers, setAnswers] = useState({});
 
-  const recordAnswer = (questionId, optionId) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
-  };
+  const [questions, setQuestions] = useState([]);
+  const { data, isLoading } = useGetQuestionsQuery(examId);
+  const [score, setScore] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (userExamdata) {
       const exam = userExamdata.find((exam) => exam.examId === examId);
       if (exam) {
         setSelectedExam(exam);
-        // Convert duration from minutes to seconds
         setExamDurationInSeconds(exam.duration);
-        console.log('Exam duration (minutes):', exam.duration);
       }
     }
   }, [userExamdata, examId]);
 
-  const [questions, setQuestions] = useState([]);
-  const { data, isLoading } = useGetQuestionsQuery(examId);
-  const [score, setScore] = useState(0);
-  const navigate = useNavigate();
-
   useEffect(() => {
-    if (data) {
-      setQuestions(data);
-    }
-  }, [data]);
+    if (data && userInfo?._id) {
+      let processedQuestions = data;
 
-  const handleMcqCompletion = () => {
-    handleTestSubmission();
+      if (selectedExam?.randomizeQuestions) {
+        processedQuestions = seededShuffle(processedQuestions, `${userInfo._id}_${examId}_q`);
+      }
+
+      if (selectedExam?.randomizeOptions) {
+        processedQuestions = processedQuestions.map((q) => ({
+          ...q,
+          options: seededShuffle(q.options, `${userInfo._id}_${q._id}_o`),
+        }));
+      }
+
+      setQuestions(processedQuestions);
+    }
+  }, [data, selectedExam, userInfo, examId]);
+
+  const recordAnswer = (questionId, optionId) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+  };
+
+  const allowBackNavigation = Boolean(selectedExam?.allowBackNavigation);
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const allAnswered =
+    questions.length > 0 && questions.every((q) => Boolean(answers[q._id]));
+
+  const goToNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    }
+  };
+
+  const goToPrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((prev) => prev - 1);
+    }
+  };
+
+  const jumpToQuestion = (index) => {
+    if (allowBackNavigation && index >= 0 && index < questions.length) {
+      setCurrentQuestionIndex(index);
+    }
   };
 
   const handleTestSubmission = async () => {
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) return;
 
     try {
       setIsSubmitting(true);
 
       const timeTakenSeconds = Math.round((Date.now() - examStartTime) / 1000);
 
-      // Save whatever answers have been given so far — this is what actually
-      // gets scored, regardless of whether the student finished naturally or
-      // ran out of time partway through.
       await axiosInstance.post(
         '/api/users/results',
         { examId, answers, timeTakenSeconds },
         { withCredentials: true },
       );
 
-      // Make sure we have the latest user info in the log
       const updatedLog = {
         ...cheatingLog,
         username: userInfo.name,
@@ -134,10 +161,18 @@ const TestPage = () => {
                   <CircularProgress />
                 ) : (
                   <MultipleChoiceQuestion
+                    questions={questions}
+                    currentQuestionIndex={currentQuestionIndex}
+                    selectedOption={answers[questions[currentQuestionIndex]?._id] || null}
+                    onSelectOption={(optionId) =>
+                      recordAnswer(questions[currentQuestionIndex]._id, optionId)
+                    }
+                    onNext={goToNext}
+                    onPrevious={goToPrevious}
+                    allowBackNavigation={allowBackNavigation}
+                    isLastQuestion={isLastQuestion}
                     submitTest={handleTestSubmission}
-                    questions={data}
                     saveUserTestScore={saveUserTestScore}
-                    recordAnswer={recordAnswer}
                   />
                 )}
               </Box>
@@ -160,6 +195,13 @@ const TestPage = () => {
                   >
                     <NumberOfQuestions
                       questionLength={questions.length}
+                      currentQuestionIndex={currentQuestionIndex}
+                      answeredQuestionIds={Object.keys(answers)}
+                      questions={questions}
+                      onJumpToQuestion={jumpToQuestion}
+                      allowBackNavigation={allowBackNavigation}
+                      allAnswered={allAnswered}
+                      onSubmit={handleTestSubmission}
                       submitTest={handleTestSubmission}
                       examDurationInSeconds={examDurationInSeconds}
                     />

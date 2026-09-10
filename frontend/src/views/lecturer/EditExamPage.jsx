@@ -58,6 +58,9 @@ const EditExamPage = () => {
       deadDate: '',
       maxAttempts: 1,
       allowReview: false,
+      allowBackNavigation: false,
+      randomizeQuestions: false,
+      randomizeOptions: false,
     },
     validationSchema: examValidationSchema,
     enableReinitialize: true,
@@ -82,6 +85,9 @@ const EditExamPage = () => {
         deadDate: toDateTimeLocal(currentExam.deadDate),
         maxAttempts: currentExam.maxAttempts || 1,
         allowReview: currentExam.allowReview || false,
+        allowBackNavigation: currentExam.allowBackNavigation || false,
+        randomizeQuestions: currentExam.randomizeQuestions || false,
+        randomizeOptions: currentExam.randomizeOptions || false,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

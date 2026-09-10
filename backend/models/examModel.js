@@ -24,6 +24,18 @@ const examSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    allowBackNavigation: {
+      type: Boolean,
+      default: false,
+    },
+    randomizeQuestions: {
+      type: Boolean,
+      default: false,
+    },
+    randomizeOptions: {
+      type: Boolean,
+      default: false,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

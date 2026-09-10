@@ -94,6 +94,33 @@ const CreateExam = ({ formik, title, subtitle, subtext, submitLabel = 'Create Ex
             }
             label="Allow students to review their answers after the exam"
           />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={Boolean(values.allowBackNavigation)}
+                onChange={(e) => setFieldValue('allowBackNavigation', e.target.checked)}
+              />
+            }
+            label="Allow students to move back and forth between questions"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={Boolean(values.randomizeQuestions)}
+                onChange={(e) => setFieldValue('randomizeQuestions', e.target.checked)}
+              />
+            }
+            label="Randomize question order"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={Boolean(values.randomizeOptions)}
+                onChange={(e) => setFieldValue('randomizeOptions', e.target.checked)}
+              />
+            }
+            label="Randomize answer option order"
+          />
         </Stack>
 
         <Stack mb={3}>

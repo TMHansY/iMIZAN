@@ -24,8 +24,18 @@ const getExams = asyncHandler(async (req, res) => {
 // @route POST /api/exams
 // @access Private (admin)
 const createExam = asyncHandler(async (req, res) => {
-  const { examName, totalQuestions, duration, liveDate, deadDate, maxAttempts, allowReview } =
-    req.body;
+  const {
+    examName,
+    totalQuestions,
+    duration,
+    liveDate,
+    deadDate,
+    maxAttempts,
+    allowReview,
+    allowBackNavigation,
+    randomizeQuestions,
+    randomizeOptions,
+  } = req.body;
 
   const exam = new Exam({
     examName,
@@ -35,6 +45,9 @@ const createExam = asyncHandler(async (req, res) => {
     deadDate,
     maxAttempts,
     allowReview,
+    allowBackNavigation,
+    randomizeQuestions,
+    randomizeOptions,
     createdBy: req.user._id,
   });
 
@@ -53,8 +66,18 @@ const createExam = asyncHandler(async (req, res) => {
 // @access Private (lecturer)
 const updateExam = asyncHandler(async (req, res) => {
   const { examId } = req.params;
-  const { examName, totalQuestions, duration, liveDate, deadDate, maxAttempts, allowReview } =
-    req.body;
+  const {
+    examName,
+    totalQuestions,
+    duration,
+    liveDate,
+    deadDate,
+    maxAttempts,
+    allowReview,
+    allowBackNavigation,
+    randomizeQuestions,
+    randomizeOptions,
+  } = req.body;
 
   const exam = await Exam.findOne({ examId });
 
@@ -75,6 +98,9 @@ const updateExam = asyncHandler(async (req, res) => {
   exam.deadDate = deadDate ?? exam.deadDate;
   exam.maxAttempts = maxAttempts ?? exam.maxAttempts;
   exam.allowReview = allowReview ?? exam.allowReview;
+  exam.allowBackNavigation = allowBackNavigation ?? exam.allowBackNavigation;
+  exam.randomizeQuestions = randomizeQuestions ?? exam.randomizeQuestions;
+  exam.randomizeOptions = randomizeOptions ?? exam.randomizeOptions;
 
   const updatedExam = await exam.save();
 

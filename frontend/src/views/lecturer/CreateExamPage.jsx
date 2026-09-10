@@ -44,6 +44,9 @@ const CreateExamPage = () => {
     deadDate: '',
     maxAttempts: 1,
     allowReview: false,
+    allowBackNavigation: false,
+    randomizeQuestions: false,
+    randomizeOptions: false,
   };
 
   const handleSubmit = async (values) => {
