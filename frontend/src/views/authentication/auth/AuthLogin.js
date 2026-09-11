@@ -33,7 +33,7 @@ const AuthLogin = ({ formik, title, subtitle, subtext }) => {
             htmlFor="username"
             mb="5px"
           >
-            Username
+            Email
           </Typography>
           <CustomTextField
             id="username"

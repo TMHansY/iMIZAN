@@ -72,6 +72,18 @@ const Menuitems = [
     icon: IconShieldCheck,
     href: '/admin/approvals',
   },
+  {
+    id: uniqueId(),
+    title: 'Account Management',
+    icon: IconShieldCheck,
+    href: '/admin/accounts',
+  },
+  {
+    id: uniqueId(),
+    title: 'System Stats',
+    icon: IconShieldCheck,
+    href: '/admin/stats',
+  },
   // {
   //   id: uniqueId(),
   //   title: 'Exam  Sale comp',

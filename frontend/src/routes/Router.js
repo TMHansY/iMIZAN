@@ -40,6 +40,8 @@ const PrivateRoute = Loadable(lazy(() => import('src/views/authentication/Privat
 const LecturerRoute = Loadable(lazy(() => import('src/views/authentication/LecturerRoute')));
 const AdminRoute = Loadable(lazy(() => import('src/views/authentication/AdminRoute')));
 const PendingApprovals = Loadable(lazy(() => import('../views/admin/PendingApprovals')));
+const AccountManagement = Loadable(lazy(() => import('../views/admin/AccountManagement')));
+const SystemStats = Loadable(lazy(() => import('../views/admin/SystemStats')));
 
 const Router = createBrowserRouter(
   createRoutesFromElements(
@@ -65,6 +67,8 @@ const Router = createBrowserRouter(
           </Route>
           <Route path="" element={<AdminRoute />}>
             <Route path="/admin/approvals" exact={true} element={<PendingApprovals />} />
+            <Route path="/admin/accounts" exact={true} element={<AccountManagement />} />
+            <Route path="/admin/stats" exact={true} element={<SystemStats />} />
           </Route>
         </Route>
         <Route path="/" element={<ExamLayout />}>

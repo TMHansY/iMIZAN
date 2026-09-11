@@ -37,6 +37,7 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState([]);
 
   const isLecturer = userInfo?.role === 'lecturer';
+  const isStudent = userInfo?.role === 'student';
 
   useEffect(() => {
     if (!examsData) return;
@@ -58,7 +59,7 @@ const NotificationBell = () => {
             })
             .filter((item) => item !== null);
           setNotifications(items);
-        } else {
+        } else if (isStudent) {
           const { data } = await axiosInstance.get('/api/users/results/my-status', {
             withCredentials: true,
           });
@@ -90,6 +91,8 @@ const NotificationBell = () => {
           });
 
           setNotifications(items);
+        } else {
+          return null; // No notifications for admins
         }
       } catch (err) {
         console.error('Failed to load notifications:', err);
@@ -97,7 +100,7 @@ const NotificationBell = () => {
     };
 
     fetchNotifications();
-  }, [examsData, isLecturer, navigate]);
+  }, [examsData, isLecturer, isStudent, navigate]);
 
   const handleOpen = (event) => setAnchorEl(event.currentTarget);
   const handleClose = () => setAnchorEl(null);

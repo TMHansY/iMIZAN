@@ -8,6 +8,11 @@ import {
   getPendingUsers,
   approveUser,
   rejectUser,
+  bulkApproveUsers,
+  bulkRejectUsers,
+  getAllAccounts,
+  toggleAccountActive,
+  getSystemStats,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { createExam, getExams } from "../controllers/examController.js";
@@ -26,5 +31,9 @@ userRoutes
 userRoutes.get("/pending", protect, getPendingUsers);
 userRoutes.put("/:id/approve", protect, approveUser);
 userRoutes.delete("/:id/reject", protect, rejectUser);
-
+userRoutes.post("/bulk-approve", protect, bulkApproveUsers);
+userRoutes.post("/bulk-reject", protect, bulkRejectUsers);
+userRoutes.get("/accounts", protect, getAllAccounts);
+userRoutes.put("/:id/toggle-active", protect, toggleAccountActive);
+userRoutes.get("/admin/stats", protect, getSystemStats);
 export default userRoutes;

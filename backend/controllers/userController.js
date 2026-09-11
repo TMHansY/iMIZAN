@@ -2,7 +2,8 @@ import asyncHandler from "express-async-handler";
 import User from "./../models/userModel.js";
 import generateToken from "../utils/generateToken.js";
 import sendEmail from "../utils/sendEmail.js";
-
+import Exam from "./../models/examModel.js";
+import Result from "./../models/resultModel.js";
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -47,6 +48,7 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
     role,
     isApproved: false,
+    hasBeenApproved: false,
   });
 
   if (user) {
@@ -112,7 +114,10 @@ const getPendingUsers = asyncHandler(async (req, res) => {
     throw new Error("Not authorized");
   }
 
-  const pendingUsers = await User.find({ isApproved: false }).select("-password");
+  const pendingUsers = await User.find({
+    isApproved: false,
+    hasBeenApproved: false,
+  }).select("-password");
   res.status(200).json(pendingUsers);
 });
 
@@ -132,6 +137,7 @@ const approveUser = asyncHandler(async (req, res) => {
   }
 
   user.isApproved = true;
+  user.hasBeenApproved = true;
   await user.save();
 
   await sendEmail({
@@ -170,6 +176,137 @@ const rejectUser = asyncHandler(async (req, res) => {
 
   res.status(200).json({ message: `${email} rejected and removed.` });
 });
+
+// @desc    Approve multiple pending accounts at once
+// @route   POST /api/users/bulk-approve
+// @access  Private (Admin only)
+const bulkApproveUsers = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400);
+    throw new Error("No accounts selected");
+  }
+
+  const users = await User.find({ _id: { $in: ids } });
+
+  await User.updateMany(
+    { _id: { $in: ids } },
+    { isApproved: true, hasBeenApproved: true }
+  );
+
+  for (const user of users) {
+    await sendEmail({
+      to: user.email,
+      subject: "Your iMIZAN account has been approved",
+      text: `Hi ${user.name},\n\nYour account has been approved. You can now log in at the iMIZAN platform.\n\n— iMIZAN`,
+    });
+  }
+
+  res.status(200).json({ message: `${users.length} account(s) approved.` });
+});
+
+// @desc    Reject (and remove) multiple pending accounts at once
+// @route   POST /api/users/bulk-reject
+// @access  Private (Admin only)
+const bulkRejectUsers = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400);
+    throw new Error("No accounts selected");
+  }
+
+  const users = await User.find({ _id: { $in: ids } });
+
+  await User.deleteMany({ _id: { $in: ids } });
+
+  for (const user of users) {
+    await sendEmail({
+      to: user.email,
+      subject: "Your iMIZAN account request was not approved",
+      text: `Hi ${user.name},\n\nYour account request was not approved. If you believe this is a mistake, please contact your administrator.\n\n— iMIZAN`,
+    });
+  }
+
+  res.status(200).json({ message: `${users.length} account(s) rejected.` });
+});
+
+// @desc    Get all approved (active or deactivated) accounts
+// @route   GET /api/users/accounts
+// @access  Private (Admin only)
+const getAllAccounts = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const accounts = await User.find({ hasBeenApproved: true }).select("-password");
+  res.status(200).json(accounts);
+});
+
+// @desc    Toggle an account's active status (deactivate/reactivate)
+// @route   PUT /api/users/:id/toggle-active
+// @access  Private (Admin only)
+const toggleAccountActive = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (user.role === "admin") {
+    res.status(400);
+    throw new Error("Cannot deactivate an admin account");
+  }
+
+  user.isApproved = !user.isApproved;
+  await user.save();
+
+  res.status(200).json({
+    message: `${user.email} is now ${user.isApproved ? "active" : "deactivated"}.`,
+    isApproved: user.isApproved,
+  });
+});
+// @desc    Get basic platform-wide stats
+// @route   GET /api/users/admin/stats
+// @access  Private (Admin only)
+const getSystemStats = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const [totalStudents, totalLecturers, totalExams, totalResults, pendingCount] =
+    await Promise.all([
+      User.countDocuments({ role: "student" }),
+      User.countDocuments({ role: "lecturer" }),
+      Exam.countDocuments(),
+      Result.countDocuments(),
+      User.countDocuments({ isApproved: false, hasBeenApproved: false }),
+    ]);
+
+  res.status(200).json({
+    totalStudents,
+    totalLecturers,
+    totalExams,
+    totalResults,
+    pendingCount,
+  });
+});
 export {
   authUser,
   registerUser,
@@ -179,4 +316,9 @@ export {
   getPendingUsers,
   approveUser,
   rejectUser,
+  bulkApproveUsers,
+  bulkRejectUsers,
+  getAllAccounts,
+  toggleAccountActive,
+  getSystemStats,
 };

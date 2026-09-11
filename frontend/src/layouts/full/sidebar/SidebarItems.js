@@ -26,10 +26,10 @@ const SidebarItems = () => {
             userInfo?.role === 'admin' &&
             ['Exams', 'Result', 'Create Exam', 'Add Questions', 'Exam Logs'].includes(item.title)
           ) {
-            return null; // Don't render this menu item for students
+            return null; // Don't render this menu item for admins
           }
 
-          if (userInfo?.role !== 'admin' && ['Pending Approvals'].includes(item.title)) {
+          if (userInfo?.role !== 'admin' && ['Pending Approvals', 'Account Management', 'System Stats'].includes(item.title)) {
             return null; // Only admins see the approvals page
           }
           // {/********SubHeader**********/}
