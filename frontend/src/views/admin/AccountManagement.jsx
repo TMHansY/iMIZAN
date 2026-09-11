@@ -18,8 +18,11 @@ import {
   InputLabel,
   InputAdornment,
   CircularProgress,
+  Stack,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
 import { toast } from 'react-toastify';
 import PageContainer from 'src/components/container/PageContainer';
 import DashboardCard from '../../components/shared/DashboardCard';
@@ -30,6 +33,7 @@ const AccountManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [hideDeactivated, setHideDeactivated] = useState(false);
 
   const fetchAccounts = async () => {
     try {
@@ -62,13 +66,27 @@ const AccountManagement = () => {
       toast.error(err?.response?.data?.message || 'Failed to update account');
     }
   };
+  const handleDelete = async (id, email) => {
+    if (!window.confirm(`Permanently delete ${email}? This cannot be undone.`)) return;
+
+    try {
+      const { data } = await axiosInstance.delete(`/api/users/${id}`, {
+        withCredentials: true,
+      });
+      toast.success(data.message);
+      fetchAccounts();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to delete account');
+    }
+  };
 
   const filteredAccounts = accounts.filter((account) => {
     const matchesSearch =
       account.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       account.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || account.role === roleFilter;
-    return matchesSearch && matchesRole;
+    const matchesDeactivated = !hideDeactivated || account.isApproved;
+    return matchesSearch && matchesRole && matchesDeactivated;
   });
 
   if (loading) {
@@ -110,6 +128,15 @@ const AccountManagement = () => {
               <MenuItem value="admin">Admin</MenuItem>
             </Select>
           </FormControl>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={hideDeactivated}
+                onChange={(e) => setHideDeactivated(e.target.checked)}
+              />
+            }
+            label="Hide deactivated accounts"
+          />
         </Box>
 
         <TableContainer component={Paper}>
@@ -144,15 +171,27 @@ const AccountManagement = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color={account.isApproved ? 'error' : 'success'}
-                        disabled={account.role === 'admin'}
-                        onClick={() => handleToggleActive(account._id, account.email)}
-                      >
-                        {account.isApproved ? 'Deactivate' : 'Reactivate'}
-                      </Button>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color={account.isApproved ? 'error' : 'success'}
+                          disabled={account.role === 'admin'}
+                          onClick={() => handleToggleActive(account._id, account.email)}
+                        >
+                          {account.isApproved ? 'Deactivate' : 'Reactivate'}
+                        </Button>
+                        {!account.isApproved && account.role !== 'admin' && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            onClick={() => handleDelete(account._id, account.email)}
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))

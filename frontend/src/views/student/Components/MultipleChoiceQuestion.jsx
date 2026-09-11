@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect} from 'react';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -22,6 +22,32 @@ export default function MultipleChoiceQuestion({
   submitTest,
   saveUserTestScore,
 }) {
+  useEffect(() => {
+    const preventCopy = (event) => {
+      event.preventDefault();
+    };
+
+    const preventCopyShortcut = (event) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        ['c', 'x', 'a'].includes(event.key.toLowerCase())
+      ) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('copy', preventCopy);
+    document.addEventListener('cut', preventCopy);
+    document.addEventListener('contextmenu', preventCopy);
+    document.addEventListener('keydown', preventCopyShortcut);
+
+    return () => {
+      document.removeEventListener('copy', preventCopy);
+      document.removeEventListener('cut', preventCopy);
+      document.removeEventListener('contextmenu', preventCopy);
+      document.removeEventListener('keydown', preventCopyShortcut);
+    };
+  }, []);
   const currentQuestionData = questions[currentQuestionIndex];
 
   if (!currentQuestionData) {
@@ -54,6 +80,9 @@ export default function MultipleChoiceQuestion({
       style={{
         width: '50%',
         boxShadow: '2px',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
       }}
     >
       <CardContent

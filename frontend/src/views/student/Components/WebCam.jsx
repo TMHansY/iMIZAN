@@ -5,12 +5,7 @@ import Webcam from 'react-webcam';
 import { drawRect } from './utilities';
 import { Box, Card } from '@mui/material';
 import { toast } from 'react-toastify';
-import { UploadClient } from '@uploadcare/upload-client';
-
-const client = new UploadClient({
-  publicKey: 'ad3316af84d6a1176983',
-  baseCDN: 'https://5u5k52y8w7.ucarecd.net',
-});
+import { uploadcareClient as client } from '../../../utils/uploadcareClient';
 
 // How far (as a ratio of eye distance) the nose can drift from center
 // before we consider the student's head turned away from the screen.

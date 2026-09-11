@@ -13,6 +13,7 @@ import {
   getAllAccounts,
   toggleAccountActive,
   getSystemStats,
+  deleteAccount,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { createExam, getExams } from "../controllers/examController.js";
@@ -36,4 +37,5 @@ userRoutes.post("/bulk-reject", protect, bulkRejectUsers);
 userRoutes.get("/accounts", protect, getAllAccounts);
 userRoutes.put("/:id/toggle-active", protect, toggleAccountActive);
 userRoutes.get("/admin/stats", protect, getSystemStats);
+userRoutes.delete("/:id", protect, deleteAccount);
 export default userRoutes;

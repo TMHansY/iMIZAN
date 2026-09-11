@@ -18,6 +18,10 @@ const questionSchema = mongoose.Schema(
         },
       },
     ],
+    imageUrl: {
+      type: String,
+      default: null,
+    },
     ansmarks: {
       type: Number,
       required: false,

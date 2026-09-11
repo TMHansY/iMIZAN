@@ -249,7 +249,9 @@ const getAllAccounts = asyncHandler(async (req, res) => {
     throw new Error("Not authorized");
   }
 
-  const accounts = await User.find({ hasBeenApproved: true }).select("-password");
+  const accounts = await User.find({
+    $or: [{ hasBeenApproved: true }, { hasBeenApproved: { $exists: false } }],
+  }).select("-password");
   res.status(200).json(accounts);
 });
 
@@ -307,6 +309,35 @@ const getSystemStats = asyncHandler(async (req, res) => {
     pendingCount,
   });
 });
+// @desc    Permanently delete a deactivated account
+// @route   DELETE /api/users/:id
+// @access  Private (Admin only)
+const deleteAccount = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") {
+    res.status(403);
+    throw new Error("Not authorized");
+  }
+
+  const user = await User.findById(req.params.id);
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  if (user.role === "admin") {
+    res.status(400);
+    throw new Error("Cannot delete an admin account");
+  }
+
+  if (user.isApproved) {
+    res.status(400);
+    throw new Error("Only deactivated accounts can be deleted. Deactivate this account first.");
+  }
+
+  await User.deleteOne({ _id: req.params.id });
+
+  res.status(200).json({ message: `${user.email} permanently deleted.` });
+});
 export {
   authUser,
   registerUser,
@@ -321,4 +352,5 @@ export {
   getAllAccounts,
   toggleAccountActive,
   getSystemStats,
+  deleteAccount,
 };
