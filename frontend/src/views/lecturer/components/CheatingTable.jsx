@@ -158,7 +158,7 @@ export default function CheatingTable() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Sno</TableCell>
+                <TableCell>Att</TableCell>
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>No Face Count</TableCell>

@@ -99,6 +99,15 @@ export default function MultipleChoiceQuestion({
         <Typography variant="body1" mb={3}>
           {currentQuestionData.question}
         </Typography>
+        {currentQuestionData.imageUrl && (
+          <Box mb={3}>
+            <img
+              src={currentQuestionData.imageUrl}
+              alt="Question"
+              style={{ maxWidth: '100%', maxHeight: 300, display: 'block', borderRadius: 4 }}
+            />
+          </Box>
+        )}
         <Box mb={10}>
           <FormControl component="fieldset">
             <RadioGroup

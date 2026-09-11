@@ -20,6 +20,7 @@ import {
   useGetQuestionsQuery,
 } from 'src/slices/examApiSlice';
 import { toast } from 'react-toastify';
+import { uploadcareClient } from '../../../utils/uploadcareClient';
 
 const AddQuestionForm = () => {
   const [questions, setQuestions] = useState([]);
@@ -27,11 +28,32 @@ const AddQuestionForm = () => {
   const [newOptions, setNewOptions] = useState(['', '', '', '']);
   const [correctOptions, setCorrectOptions] = useState([false, false, false, false]);
   const [selectedExamId, setSelectedExamId] = useState('');
+  const [imageUrl, setImageUrl] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleOptionChange = (index) => {
     const updatedCorrectOptions = [false, false, false, false];
     updatedCorrectOptions[index] = true;
     setCorrectOptions(updatedCorrectOptions);
+  };
+  const handleImageSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    try {
+      const result = await uploadcareClient.uploadFile(file, { store: true });
+      setImageUrl(result.cdnUrl);
+      toast.success('Image uploaded');
+    } catch (err) {
+      toast.error('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl(null);
   };
 
   const [createQuestion, { isLoading }] = useCreateQuestionMutation();
@@ -80,6 +102,7 @@ const AddQuestionForm = () => {
         isCorrect: correctOptions[index],
       })),
       examId: selectedExamId,
+      imageUrl: imageUrl,
     };
 
     try {
@@ -91,6 +114,7 @@ const AddQuestionForm = () => {
       setNewQuestion('');
       setNewOptions(['', '', '', '']);
       setCorrectOptions([false, false, false, false]);
+      setImageUrl(null);
     } catch (err) {
       swal('', 'Failed to create question. Please try again.', 'error');
     }
@@ -142,6 +166,15 @@ const AddQuestionForm = () => {
               }}
               sx={{ mb: 2 }}
             />
+            {questionObj.imageUrl && (
+              <Box sx={{ mb: 2 }}>
+                <img
+                  src={questionObj.imageUrl}
+                  alt="Question"
+                  style={{ maxWidth: '100%', maxHeight: 200, display: 'block', borderRadius: 4 }}
+                />
+              </Box>
+            )}
             <Stack spacing={2}>
               {questionObj.options.map((option, optionIndex) => (
                 <Stack
@@ -183,6 +216,25 @@ const AddQuestionForm = () => {
         sx={{ mb: 1 }}
       />
 
+      <Box sx={{ mb: 2 }}>
+        <Button variant="outlined" component="label" disabled={isUploadingImage}>
+          {isUploadingImage ? 'Uploading...' : imageUrl ? 'Replace Image' : 'Add Image (optional)'}
+          <input type="file" accept="image/*" hidden onChange={handleImageSelect} />
+        </Button>
+        {imageUrl && (
+          <Box sx={{ mt: 1 }}>
+            <img
+              src={imageUrl}
+              alt="Question"
+              style={{ maxWidth: '100%', maxHeight: 200, display: 'block', borderRadius: 4 }}
+            />
+            <Button size="small" color="error" onClick={handleRemoveImage} sx={{ mt: 0.5 }}>
+              Remove Image
+            </Button>
+          </Box>
+        )}
+      </Box>
+
       <RadioGroup
         value={correctOptions.findIndex((v) => v)}
         onChange={(e) => handleOptionChange(Number(e.target.value))}
@@ -213,7 +265,7 @@ const AddQuestionForm = () => {
       </RadioGroup>
 
       <Stack mt={2} direction="row" spacing={2}>
-        <Button variant="outlined" onClick={handleAddQuestion} disabled={limitReached}>
+        <Button variant="outlined" onClick={handleAddQuestion} disabled={limitReached || isUploadingImage}>
           Add Question
         </Button>
       </Stack>

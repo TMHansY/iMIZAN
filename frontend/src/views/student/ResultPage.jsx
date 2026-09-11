@@ -141,10 +141,23 @@ const ResultPage = () => {
     setReviewLoading(true);
     try {
       const { data: logs } = await triggerGetCheatingLogs(result.examId);
-      const studentLogs = (logs || [])
-        .filter((log) => log.email === result.userId?.email)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setReviewLog(studentLogs[0] || null);
+      const studentLogs = (logs || []).filter((log) => log.email === result.userId?.email);
+
+      // Match this specific attempt to its own log by finding whichever log's
+      // timestamp is closest to this attempt's submission time — rather than
+      // always grabbing the most recent log overall, which would show the
+      // same log for every past attempt.
+      const resultTime = new Date(result.createdAt).getTime();
+      const closestLog = studentLogs.reduce((closest, log) => {
+        const logTime = new Date(log.createdAt).getTime();
+        const diff = Math.abs(logTime - resultTime);
+        if (!closest || diff < closest.diff) {
+          return { log, diff };
+        }
+        return closest;
+      }, null);
+
+      setReviewLog(closestLog?.log || null);
     } catch (err) {
       toast.error('Failed to load cheating log for this student');
     } finally {

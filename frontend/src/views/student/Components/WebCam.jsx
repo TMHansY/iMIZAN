@@ -107,7 +107,9 @@ export default function Home({ cheatingLog, incrementViolation }) {
       const cocoNet = await cocossd.load();
       await loadModels();
       console.log('AI models loaded.');
-      setInterval(() => detect(cocoNet), 1000);
+      setInterval(() => {
+        detect(cocoNet).catch((err) => console.error('Detection loop error:', err));
+      }, 1000);
     } catch (error) {
       console.error('Error loading models:', error);
       toast.error('Failed to load AI models. Please refresh the page.');

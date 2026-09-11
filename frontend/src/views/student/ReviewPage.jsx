@@ -98,6 +98,16 @@ const ReviewPage = () => {
                   )}
                 </Stack>
 
+                {question.imageUrl && (
+                  <Box mb={2}>
+                    <img
+                      src={question.imageUrl}
+                      alt="Question"
+                      style={{ maxWidth: '100%', maxHeight: 250, display: 'block', borderRadius: 4 }}
+                    />
+                  </Box>
+                )}
+
                 <Stack spacing={1}>
                   {question.options.map((option) => {
                     const isSelected = option._id === selectedOptionId;

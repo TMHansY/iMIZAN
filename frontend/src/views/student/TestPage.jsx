@@ -17,11 +17,18 @@ import { seededShuffle } from '../../utils/seededShuffle';
 const TestPage = () => {
   const { examId, testId } = useParams();
   const [examStartTime] = useState(() => Date.now());
+
+  // Every new attempt starts with a clean proctoring log — otherwise flags
+  // from a previous attempt (in this same browser session) would carry over.
+  useEffect(() => {
+    resetCheatingLog(examId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examId]);
   const [selectedExam, setSelectedExam] = useState(null);
   const [examDurationInSeconds, setExamDurationInSeconds] = useState(0);
   const { data: userExamdata, isLoading: isExamsLoading } = useGetExamsQuery();
   const { userInfo } = useSelector((state) => state.auth);
-  const { cheatingLog, incrementViolation } = useCheatingLog();
+  const { cheatingLog, incrementViolation, resetCheatingLog } = useCheatingLog();
   const [saveCheatingLogMutation] = useSaveCheatingLogMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 

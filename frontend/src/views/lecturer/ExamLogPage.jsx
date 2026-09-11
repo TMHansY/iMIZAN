@@ -6,9 +6,9 @@ import CheatingTable from './components/CheatingTable';
 
 const ExamLogPage = () => {
   return (
-    <PageContainer title="ExamLog Page" description="this is ExamLog page">
-      <DashboardCard title="ExamLog Page">
-        <Typography>This is a ExamLog page</Typography>
+    <PageContainer title="Exam Log Page" description="this is Exam Log page">
+      <DashboardCard title="Exam Log Page">
+        <Typography>This is a Exam Log page</Typography>
         <CheatingTable />
       </DashboardCard>
     </PageContainer>
