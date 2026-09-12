@@ -64,8 +64,26 @@ const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent, isLecturer })
             helperText={touched.email && errors.email ? errors.email : null}
             required
             fullWidth
+            disabled={isStudent || isLecturer}
           />
-
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            component="label"
+            htmlFor="idNumber"
+            mb="5px"
+            mt="25px"
+          >
+            {values.role === 'lecturer' || values.role === 'admin' ? 'Staff Number' : 'Matric Number'}
+          </Typography>
+          <CustomTextField
+            id="idNumber"
+            name="idNumber"
+            variant="outlined"
+            value={values.idNumber}
+            fullWidth
+            disabled
+          />
           <Typography
             variant="subtitle1"
             fontWeight={600}

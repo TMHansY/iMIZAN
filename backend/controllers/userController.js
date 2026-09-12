@@ -25,6 +25,7 @@ const authUser = asyncHandler(async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      idNumber: user.idNumber,
       role: user.role,
       password_encrypted: user.password,
       message: "User Successfully login with role: " + user.role,
@@ -81,6 +82,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
     _id: req.user._id,
     name: req.user.name,
     email: req.user.email,
+    idNumber: req.user.idNumber,
     role: req.user.role,
   };
   res.status(200).json(user);
@@ -102,6 +104,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
+      idNumber: updatedUser.idNumber,
       role: updatedUser.role,
     });
   } else {

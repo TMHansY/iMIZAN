@@ -32,6 +32,8 @@ const UserAccount = () => {
   const initialUserValues = {
     name: userInfo?.name || '',
     email: userInfo?.email || '',
+    idNumber: userInfo?.idNumber || '',
+    role: userInfo?.role || 'student',
     password: '',
     confirm_password: '',
   };
