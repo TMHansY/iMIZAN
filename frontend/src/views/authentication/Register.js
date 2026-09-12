@@ -15,6 +15,7 @@ import Loader from './Loader';
 const userValidationSchema = yup.object({
   name: yup.string().min(2).max(25).required('Please enter your name'),
   email: yup.string('Enter your email').email('Enter a valid email').required('Email is required'),
+  idNumber: yup.string().required('Matric/Staff Number is required'),
   password: yup
     .string('Enter your password')
     .min(6, 'Password should be of minimum 6 characters length')
@@ -28,6 +29,7 @@ const userValidationSchema = yup.object({
 const initialUserValues = {
   name: '',
   email: '',
+  idNumber: '',
   password: '',
   confirm_password: '',
   role: 'student',
@@ -58,12 +60,12 @@ const Register = () => {
     e.preventDefault();
   };
 
-  const handleSubmit = async ({ name, email, password, confirm_password, role }) => {
+  const handleSubmit = async ({ name, email, idNumber, password, confirm_password, role }) => {
     if (password !== confirm_password) {
       toast.error('Passwords do not match');
     } else {
       try {
-        await register({ name, email, password, role }).unwrap();
+        await register({ name, email, idNumber, password, role }).unwrap();
         formik.resetForm();
 
         toast.success('Account created! Please wait for an admin to approve your account before logging in.');

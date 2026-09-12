@@ -68,6 +68,30 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
             // onChange={onEmailChange} // Call the callback function on change
             //   size="small"
           />
+          
+          <Typography
+            variant="subtitle1"
+            fontWeight={600}
+            component="label"
+            htmlFor="idNumber"
+            mb="5px"
+            mt="10px"
+          >
+            {values.role === 'lecturer' ? 'Staff Number' : 'Matric Number'}
+          </Typography>
+          <CustomTextField
+            id="idNumber"
+            name="idNumber"
+            variant="outlined"
+            placeholder={values.role === 'lecturer' ? 'Enter Your Staff Number' : 'Enter Your Matric Number'}
+            value={values.idNumber}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={touched.idNumber && errors.idNumber ? true : false}
+            helperText={touched.idNumber && errors.idNumber ? errors.idNumber : null}
+            required
+            fullWidth
+          />
 
           <Typography
             variant="subtitle1"

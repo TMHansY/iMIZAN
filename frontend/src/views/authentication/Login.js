@@ -18,14 +18,14 @@ import { toast } from 'react-toastify';
 import Loader from './Loader';
 
 const userValidationSchema = yup.object({
-  email: yup.string('Enter your email').email('Enter a valid email').required('Email is required'),
+  identifier: yup.string().required('Email or ID Number is required'),
   password: yup
     .string('Enter your password')
     .min(2, 'Password should be of minimum 8 characters length')
     .required('Password is required'),
 });
 const initialUserValues = {
-  email: '',
+  identifier: '',
   password: '',
 };
 
@@ -51,9 +51,9 @@ const Login = () => {
     }
   }, [navigate, userInfo]);
 
-  const handleSubmit = async ({ email, password }) => {
+  const handleSubmit = async ({ identifier, password }) => {
     try {
-      const res = await login({ email, password }).unwrap();
+      const res = await login({ identifier, password }).unwrap();
 
       dispatch(setCredentials({ ...res }));
       formik.resetForm();

@@ -34,25 +34,56 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useGetQuestionsQuery, useGetExamsQuery } from 'src/slices/examApiSlice';
 import axiosInstance from '../../axios';
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
+import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import ShuffleOutlinedIcon from '@mui/icons-material/ShuffleOutlined';
 
-const instructionItems = [
-  {
-    icon: <ArticleOutlinedIcon color="action" />,
-    text: 'You may need blank sheets for rough work — have them ready before starting.',
-  },
-  {
-    icon: <VisibilityOutlinedIcon color="action" />,
-    text: 'Brief moments where your face isn\'t visible (e.g. looking down to work on paper) are logged, but not automatically penalized — your lecturer will review the recording and decide whether each flagged moment was reasonable.',
-  },
-  {
-    icon: <FlagOutlinedIcon color="action" />,
-    text: 'Click "Finish Test" once you have answered all questions to submit.',
-  },
-  {
+const buildInstructionItems = (exam) => {
+  const items = [
+    {
+      icon: <ArticleOutlinedIcon color="action" />,
+      text: 'You may need blank sheets for rough work — have them ready before starting.',
+    },
+    {
+      icon: <VisibilityOutlinedIcon color="action" />,
+      text: "Brief moments where your face isn't visible (e.g. looking down to work on paper) are logged, but not automatically penalized — your lecturer will review the recording and decide whether each flagged moment was reasonable.",
+    },
+    {
+      icon: <BlockOutlinedIcon color="action" />,
+      text: 'Switching tabs, moving your cursor off the exam window, and copy/paste are all detected and logged.',
+    },
+  ];
+
+  if (exam?.allowBackNavigation) {
+    items.push({
+      icon: <SwapHorizOutlinedIcon color="action" />,
+      text: 'You may move freely between questions using Previous/Next or by clicking a question number, and change your answers at any time before submitting.',
+    });
+    items.push({
+      icon: <FlagOutlinedIcon color="action" />,
+      text: 'Once you have answered every question, click "Submit Exam" to finish.',
+    });
+  } else {
+    items.push({
+      icon: <FlagOutlinedIcon color="action" />,
+      text: 'Questions must be answered in order. Click "Finish Test" on the last question to submit.',
+    });
+  }
+
+  if (exam?.randomizeQuestions || exam?.randomizeOptions) {
+    items.push({
+      icon: <ShuffleOutlinedIcon color="action" />,
+      text: 'Question and/or answer order may differ from other students — this does not affect scoring.',
+    });
+  }
+
+  items.push({
     icon: <InsightsOutlinedIcon color="action" />,
     text: 'Your score will be available once your lecturer makes it visible to you.',
-  },
-];
+  });
+
+  return items;
+};
 
 export default function ExamDetails() {
   const navigate = useNavigate();
@@ -137,7 +168,7 @@ export default function ExamDetails() {
           </Typography>
           <Typography variant="body1" color="text.secondary" mb={3}>
             This is a proctored multiple choice exam. Your webcam will monitor your session for
-            the entire duration to help ensure academic integrity. The exam questions are sequential.
+            the entire duration to help ensure academic integrity.
           </Typography>
 
           {/* Quick facts */}
@@ -164,7 +195,7 @@ export default function ExamDetails() {
             Before you begin
           </Typography>
           <List dense disablePadding sx={{ mb: 3 }}>
-            {instructionItems.map((item, index) => (
+            {buildInstructionItems(currentExam).map((item, index) => (
               <ListItem key={index} disableGutters sx={{ py: 0.75 }}>
                 <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.text} />

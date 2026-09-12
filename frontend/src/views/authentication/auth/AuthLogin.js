@@ -30,21 +30,21 @@ const AuthLogin = ({ formik, title, subtitle, subtext }) => {
             variant="subtitle1"
             fontWeight={600}
             component="label"
-            htmlFor="username"
+            htmlFor="identifier"
             mb="5px"
           >
-            Email
+            Email or ID Number
           </Typography>
           <CustomTextField
-            id="username"
-            name="email"
+            id="identifier"
+            name="identifier"
             variant="outlined"
-            placeholder="Enter Your Email"
-            value={values.email}
+            placeholder="Enter Your Email or Matric/Staff Number"
+            value={values.identifier}
             onChange={handleChange}
             onBlur={handleBlur}
-            error={touched.email && errors.email ? true : false}
-            helperText={touched.email && errors.email ? errors.email : null}
+            error={touched.identifier && errors.identifier ? true : false}
+            helperText={touched.identifier && errors.identifier ? errors.identifier : null}
             required
             fullWidth
           />
