@@ -73,7 +73,7 @@ export default function Home({ cheatingLog, incrementViolation }) {
     noFace: 'Please face the screen',
     multipleFace: 'Multiple faces detected',
     cellPhone: 'Cell phone detected',
-    tabSwitch: 'Tab switch detected',
+    tabSwitch: 'Tab inactivity detected',
   };
 
   const handleDetection = async (type) => {
@@ -208,16 +208,32 @@ export default function Home({ cheatingLog, incrementViolation }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Tab-switch detection: browsers don't allow JS to prevent switching
-  // tabs, but the Page Visibility API reliably tells us when it happens.
+  // Tab-switch + cursor-left-page detection: browsers don't allow JS to
+  // prevent either of these, but the Page Visibility API and mouseleave
+  // events reliably tell us when they happen. Both feed the same
+  // 'tabSwitch' counter, since either signals attention leaving the exam.
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         handleDetection('tabSwitch');
       }
     };
+
+    const handleMouseLeave = (event) => {
+      // Only count the cursor genuinely leaving the browser viewport
+      // (relatedTarget is null when moving outside the document entirely).
+      if (!event.relatedTarget) {
+        handleDetection('tabSwitch');
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

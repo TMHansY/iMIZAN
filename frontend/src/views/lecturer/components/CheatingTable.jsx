@@ -164,7 +164,7 @@ export default function CheatingTable() {
                 <TableCell>No Face Count</TableCell>
                 <TableCell>Multiple Face Count</TableCell>
                 <TableCell>Cell Phone Count</TableCell>
-                <TableCell>Tab Switch Count</TableCell>
+                <TableCell>Tab Inactivity Count</TableCell>
                 <TableCell>Screenshots</TableCell>
               </TableRow>
             </TableHead>
