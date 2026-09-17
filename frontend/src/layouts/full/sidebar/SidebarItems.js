@@ -18,18 +18,24 @@ const SidebarItems = () => {
           // Check if the user is a student and if the item should be hidden
           if (
             userInfo?.role === 'student' &&
-            ['Create Exam', 'Add Questions', 'Exam Logs'].includes(item.title)
+            ['Create Exam', 'Add Questions', 'Course Enrollments', 'Exam Logs'].includes(item.title)
           ) {
             return null; // Don't render this menu item for students
           }
           if (
+            userInfo?.role === 'lecturer' &&
+            ['Courses'].includes(item.title)
+          ) {
+            return null; // Don't render this menu item for lecturers
+          }
+          if (
             userInfo?.role === 'admin' &&
-            ['Exams', 'Result', 'Create Exam', 'Add Questions', 'Exam Logs'].includes(item.title)
+            ['Exams', 'Result', 'Courses', 'Create Exam', 'Add Questions', 'Course Enrollments', 'Exam Logs'].includes(item.title)
           ) {
             return null; // Don't render this menu item for admins
           }
 
-          if (userInfo?.role !== 'admin' && ['Pending Approvals', 'Account Management', 'System Stats'].includes(item.title)) {
+          if (userInfo?.role !== 'admin' && ['Pending Approvals', 'Account Management', 'System Stats', 'Course Management'].includes(item.title)) {
             return null; // Only admins see the approvals page
           }
           // {/********SubHeader**********/}

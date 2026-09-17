@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 import examRoutes from "./routes/examRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
+import enrollmentRoutes from "./routes/enrollmentRoutes.js";
 import { exec } from "child_process";
 import fs from "fs";
 import { writeFileSync } from "fs";
@@ -37,7 +39,8 @@ app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/users", examRoutes);
 app.use("/api/users", resultRoutes);
-
+app.use("/api/courses", courseRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
 
 // we we are deploying this in production
 // make frontend build then

@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 
-const CreateExam = ({ formik, title, subtitle, subtext, submitLabel = 'Create Exam' }) => {
+const CreateExam = ({ formik, title, subtitle, subtext, submitLabel = 'Create Exam', courses = [] }) => {
   const { values, errors, touched, handleBlur, handleChange, handleSubmit, setFieldValue } = formik;
 
   return (
@@ -41,7 +41,33 @@ const CreateExam = ({ formik, title, subtitle, subtext, submitLabel = 'Create Ex
             helperText={touched.examName && errors.examName}
           />
         </Stack>
-
+        <Stack mb={3}>
+          <FormControl fullWidth error={touched.courseId && Boolean(errors.courseId)}>
+            <InputLabel>Course</InputLabel>
+            <Select
+              value={values.courseId}
+              label="Course"
+              onChange={(e) => setFieldValue('courseId', e.target.value)}
+            >
+              {courses.length === 0 ? (
+                <MenuItem value="" disabled>
+                  No courses assigned to you
+                </MenuItem>
+              ) : (
+                courses.map((course) => (
+                  <MenuItem key={course.courseId} value={course.courseId}>
+                    {course.courseCode} — {course.courseName}
+                  </MenuItem>
+                ))
+              )}
+            </Select>
+            {touched.courseId && errors.courseId && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                {errors.courseId}
+              </Typography>
+            )}
+          </FormControl>
+        </Stack>
         <Stack mb={3}>
           <CustomTextField
             id="totalQuestions"

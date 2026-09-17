@@ -7,9 +7,12 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import { useGetExamsQuery, useUpdateExamMutation } from '../../slices/examApiSlice.js';
+import { useState } from 'react';
+import axiosInstance from '../../axios';
 
 const examValidationSchema = yup.object({
   examName: yup.string().required('Exam Name is required'),
+  courseId: yup.string().required('A course is required'),
   totalQuestions: yup
     .number()
     .typeError('Total Number of Questions must be a number')
@@ -46,12 +49,28 @@ const EditExamPage = () => {
   const navigate = useNavigate();
   const { data: examsData, isLoading } = useGetExamsQuery();
   const [updateExam, { isLoading: isUpdating }] = useUpdateExamMutation();
+  const [courses, setCourses] = useState([]);
 
   const currentExam = examsData?.find((exam) => exam.examId === examId);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const { data } = await axiosInstance.get('/api/courses/mine', {
+          withCredentials: true,
+        });
+        setCourses(data);
+      } catch (err) {
+        console.error('Failed to load courses:', err);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const formik = useFormik({
     initialValues: {
       examName: '',
+      courseId: '',
       totalQuestions: '',
       duration: '',
       liveDate: '',
@@ -79,15 +98,13 @@ const EditExamPage = () => {
     if (currentExam) {
       formik.setValues({
         examName: currentExam.examName || '',
+        courseId: currentExam.courseId || '',
         totalQuestions: currentExam.totalQuestions || '',
         duration: currentExam.duration || '',
         liveDate: toDateTimeLocal(currentExam.liveDate),
         deadDate: toDateTimeLocal(currentExam.deadDate),
         maxAttempts: currentExam.maxAttempts || 1,
         allowReview: currentExam.allowReview || false,
-        allowBackNavigation: currentExam.allowBackNavigation || false,
-        randomizeQuestions: currentExam.randomizeQuestions || false,
-        randomizeOptions: currentExam.randomizeOptions || false,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -140,6 +157,7 @@ const EditExamPage = () => {
             <Card elevation={9} sx={{ p: 4, zIndex: 1, width: '100%', maxWidth: '800px' }}>
               <ExamForm
                 formik={formik}
+                courses={courses}
                 submitLabel="Update Exam"
                 title={
                   <Typography variant="h3" textAlign="center" color="textPrimary" mb={1}>

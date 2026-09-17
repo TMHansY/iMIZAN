@@ -7,9 +7,12 @@ import * as yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useCreateExamMutation } from '../../slices/examApiSlice.js';
+import { useEffect, useState } from 'react';
+import axiosInstance from '../../axios';
 
 const examValidationSchema = yup.object({
   examName: yup.string().required('Exam Name is required'),
+  courseId: yup.string().required('A course is required'),
   totalQuestions: yup
     .number()
     .typeError('Total Number of Questions must be a number')
@@ -35,9 +38,25 @@ const examValidationSchema = yup.object({
 const CreateExamPage = () => {
   const { userInfo } = useSelector((state) => state.auth);
   const [createExam, { isLoading }] = useCreateExamMutation();
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const { data } = await axiosInstance.get('/api/courses/mine', {
+          withCredentials: true,
+        });
+        setCourses(data);
+      } catch (err) {
+        console.error('Failed to load courses:', err);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const initialExamValues = {
     examName: '',
+    courseId: '',
     totalQuestions: '',
     duration: '',
     liveDate: '',
@@ -99,6 +118,7 @@ const CreateExamPage = () => {
             <Card elevation={9} sx={{ p: 4, zIndex: 1, width: '100%', maxWidth: '800px' }}>
               <ExamForm
                 formik={formik}
+                courses={courses}
                 title={
                   <Typography variant="h3" textAlign="center" color="textPrimary" mb={1}>
                     Create Exam

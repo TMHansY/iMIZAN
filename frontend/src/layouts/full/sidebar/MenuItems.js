@@ -8,6 +8,7 @@ import {
   IconUserPlus,
   IconPlayerPlayFilled,
   IconShieldCheck,
+  IconFlag,
 } from '@tabler/icons-react';
 
 import { uniqueId } from 'lodash';
@@ -41,6 +42,12 @@ const Menuitems = [
     href: '/result',
   },
   {
+    id: uniqueId(),
+    title: 'Courses',
+    icon: IconLayoutDashboard,
+    href: '/courses',
+  },
+  {
     navlabel: true,
     subheader: 'Lecturer',
   },
@@ -58,8 +65,14 @@ const Menuitems = [
   },
   {
     id: uniqueId(),
-    title: 'Exam Logs',
+    title: 'Course Enrollments',
     icon: IconUserPlus,
+    href: '/course-enrollments',
+  },
+  {
+    id: uniqueId(),
+    title: 'Exam Logs',
+    icon: IconFlag,
     href: '/exam-log',
   },
   {
@@ -83,6 +96,12 @@ const Menuitems = [
     title: 'System Stats',
     icon: IconShieldCheck,
     href: '/admin/stats',
+  },
+  {
+    id: uniqueId(),
+    title: 'Course Management',
+    icon: IconShieldCheck,
+    href: '/admin/courses',
   },
   // {
   //   id: uniqueId(),

@@ -20,6 +20,7 @@ const Success = Loadable(lazy(() => import('../views/Success')));
 
 const TestPage = Loadable(lazy(() => import('./../views/student/TestPage')));
 const ExamPage = Loadable(lazy(() => import('./../views/student/ExamPage')));
+const CoursesPage = Loadable(lazy(() => import('./../views/student/CoursesPage')));
 const Dashboard = Loadable(lazy(() => import('./../views/Dashboard')));
 const ExamDetails = Loadable(lazy(() => import('./../views/student/ExamDetails')));
 const ResultPage = Loadable(lazy(() => import('./../views/student/ResultPage')));
@@ -36,12 +37,14 @@ const CreateExamPage = Loadable(lazy(() => import('./../views/lecturer/CreateExa
 const EditExamPage = Loadable(lazy(() => import('./../views/lecturer/EditExamPage')));
 const ExamLogPage = Loadable(lazy(() => import('./../views/lecturer/ExamLogPage')));
 const AddQuestions = Loadable(lazy(() => import('./../views/lecturer/AddQuestions')));
+const CourseEnrollments = Loadable(lazy(() => import('./../views/lecturer/CourseEnrollments')));
 const PrivateRoute = Loadable(lazy(() => import('src/views/authentication/PrivateRoute')));
 const LecturerRoute = Loadable(lazy(() => import('src/views/authentication/LecturerRoute')));
 const AdminRoute = Loadable(lazy(() => import('src/views/authentication/AdminRoute')));
 const PendingApprovals = Loadable(lazy(() => import('../views/admin/PendingApprovals')));
 const AccountManagement = Loadable(lazy(() => import('../views/admin/AccountManagement')));
 const SystemStats = Loadable(lazy(() => import('../views/admin/SystemStats')));
+const CourseManagement = Loadable(lazy(() => import('../views/admin/CourseManagement')));
 
 const Router = createBrowserRouter(
   createRoutesFromElements(
@@ -57,6 +60,7 @@ const Router = createBrowserRouter(
           <Route path="/sample-page" exact={true} element={<SamplePage />} />
           <Route path="/Success" exact={true} element={<Success />} />
           <Route path="/exam" exact={true} element={<ExamPage />} />
+          <Route path="/courses" exact={true} element={<CoursesPage />} />
           <Route path="/result" exact={true} element={<ResultPage />} />
           <Route path="/review/:resultId" exact={true} element={<ReviewPage />} />
           <Route path="" element={<LecturerRoute />}>
@@ -64,11 +68,13 @@ const Router = createBrowserRouter(
             <Route path="/edit-exam/:examId" exact={true} element={<EditExamPage />} />
             <Route path="/add-questions" exact={true} element={<AddQuestions />} />
             <Route path="/exam-log" exact={true} element={<ExamLogPage />} />
+            <Route path="/course-enrollments" exact={true} element={<CourseEnrollments />} />
           </Route>
           <Route path="" element={<AdminRoute />}>
             <Route path="/admin/approvals" exact={true} element={<PendingApprovals />} />
             <Route path="/admin/accounts" exact={true} element={<AccountManagement />} />
             <Route path="/admin/stats" exact={true} element={<SystemStats />} />
+            <Route path="/admin/courses" exact={true} element={<CourseManagement />} />
           </Route>
         </Route>
         <Route path="/" element={<ExamLayout />}>

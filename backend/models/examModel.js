@@ -40,6 +40,10 @@ const examSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    courseId: {
+      type: String,
+      default: null,
+    },
     liveDate: {
       type: Date,
       required: true,
