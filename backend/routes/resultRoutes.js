@@ -4,6 +4,7 @@ import {
   saveResult,
   getResultsByExamId,
   getUserResults,
+  deleteResult,
   toggleResultVisibility,
   getAllResults,
   getAttemptCount,
@@ -45,6 +46,9 @@ resultRoutes.put("/results/:resultId/decision", setResultDecision);
 
 // Get a single result by ID (for review)
 resultRoutes.get("/results/single/:resultId", getResultById);
+
+// Delete a specific result/attempt
+resultRoutes.delete("/results/:resultId", deleteResult);
 
 // Set visibility for all results of a specific exam (for lecturers)
 resultRoutes.put("/results/exam/:examId/visibility", setExamResultsVisibility);

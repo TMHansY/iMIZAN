@@ -77,8 +77,8 @@ export default function MultipleChoiceQuestion({
 
   return (
     <Card
-      style={{
-        width: '50%',
+      sx={{
+        width: { xs: '100%', md: '50%' },
         boxShadow: '2px',
         userSelect: 'none',
         WebkitUserSelect: 'none',

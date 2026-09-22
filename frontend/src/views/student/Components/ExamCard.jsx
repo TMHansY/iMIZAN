@@ -49,7 +49,7 @@ export default function ExamCard({ exam }) {
       <Box onClick={handleCardClick} sx={{ cursor: 'pointer' }}>
         <Box
           sx={{
-            height: 140,
+            height: { xs: 100, sm: 140 },
             bgcolor: iconBgColor,
             display: 'flex',
             alignItems: 'center',
@@ -58,18 +58,32 @@ export default function ExamCard({ exam }) {
             '&:hover': { transform: 'scale(1.03)' },
           }}
         >
-          <Icon sx={{ fontSize: 64, color: 'white' }} />
+          <Icon sx={{ fontSize: { xs: 48, sm: 64 }, color: 'white' }} />
         </Box>
         <CardContent>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography gutterBottom variant="h5" component="div">
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+            <Typography
+              gutterBottom
+              variant="h5"
+              component="div"
+              title={examName}
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                wordBreak: 'break-word',
+              }}
+            >
               {examName}
             </Typography>
             {/* Edit/Delete icons at the right end - only show for lecturers */}
             {isLecturer && (
-              <Stack direction="row" spacing={0.5}>
+              <Stack direction="row" spacing={0.5} flexShrink={0}>
                 <IconButton
                   aria-label="edit"
+                  size="small"
                   onClick={(e) => {
                     e.stopPropagation();
                     navigate(`/edit-exam/${examId}`);

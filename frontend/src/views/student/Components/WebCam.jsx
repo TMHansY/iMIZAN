@@ -213,6 +213,8 @@ export default function Home({ cheatingLog, incrementViolation }) {
   // events reliably tell us when they happen. Both feed the same
   // 'tabSwitch' counter, since either signals attention leaving the exam.
   useEffect(() => {
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
         handleDetection('tabSwitch');
@@ -220,15 +222,18 @@ export default function Home({ cheatingLog, incrementViolation }) {
     };
 
     const handleMouseLeave = (event) => {
-      // Only count the cursor genuinely leaving the browser viewport
-      // (relatedTarget is null when moving outside the document entirely).
       if (!event.relatedTarget) {
         handleDetection('tabSwitch');
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    document.addEventListener('mouseleave', handleMouseLeave);
+
+    // Cursor-leave detection only makes sense on devices with a real mouse —
+    // touchscreens don't have a persistent cursor and can misfire this event.
+    if (!isTouchDevice) {
+      document.addEventListener('mouseleave', handleMouseLeave);
+    }
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);

@@ -35,6 +35,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import PageContainer from 'src/components/container/PageContainer';
 import DashboardCard from '../../components/shared/DashboardCard';
 import axiosInstance from '../../axios';
@@ -169,6 +170,20 @@ const ResultPage = () => {
     setReviewDialogOpen(false);
     setReviewResult(null);
     setReviewLog(null);
+  };
+
+  const handleDeleteResult = async (resultId) => {
+    if (!window.confirm('Permanently delete this attempt? This cannot be undone.')) return;
+
+    try {
+      await axiosInstance.delete(`/api/users/results/${resultId}`, {
+        withCredentials: true,
+      });
+      toast.success('Attempt deleted');
+      await refreshResults();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to delete attempt');
+    }
   };
 
   const handleSetDecision = async (decision) => {
@@ -502,6 +517,13 @@ const ResultPage = () => {
                           title="Review log & decide pass/fail"
                         >
                           <RateReviewIcon />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleDeleteResult(result._id)}
+                          color="error"
+                          title="Delete this attempt"
+                        >
+                          <DeleteIcon />
                         </IconButton>
                       </>
                     );

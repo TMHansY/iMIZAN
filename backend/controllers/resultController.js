@@ -2,6 +2,8 @@ import asyncHandler from "express-async-handler";
 import Result from "../models/resultModel.js";
 import Question from "../models/quesModel.js";
 import Exam from "../models/examModel.js";
+import User from "../models/userModel.js";
+import CheatingLog from "../models/cheatingLogModel.js";
 import isExamOwner from "../utils/checkExamOwnership.js";
 
 const PASS_THRESHOLD_PERCENTAGE = 50;
@@ -376,11 +378,65 @@ const getPendingReviewSummary = asyncHandler(async (req, res) => {
     data: pendingResults.map((r) => ({ examId: r._id, pendingCount: r.count })),
   });
 });
+// @desc    Delete a specific result/attempt
+// @route   DELETE /api/users/results/:resultId
+// @access  Private (Lecturer only, must own the course/exam)
+const deleteResult = asyncHandler(async (req, res) => {
+  const { resultId } = req.params;
+
+  if (req.user.role !== "lecturer") {
+    res.status(403);
+    throw new Error("Not authorized to delete results");
+  }
+
+  const result = await Result.findById(resultId);
+  if (!result) {
+    res.status(404);
+    throw new Error("Result not found");
+  }
+
+  const exam = await Exam.findOne({ examId: result.examId });
+  if (!isExamOwner(exam, req.user)) {
+    res.status(403);
+    throw new Error("Not authorized to delete this result");
+  }
+
+  // Find and remove the matching cheating log for this specific attempt,
+  // using the same "closest timestamp" heuristic the review dialog uses to
+  // pair a result with its log (they aren't directly linked in the schema).
+  const student = await User.findById(result.userId);
+  if (student) {
+    const candidateLogs = await CheatingLog.find({
+      examId: result.examId,
+      email: student.email,
+    });
+
+    if (candidateLogs.length > 0) {
+      const resultTime = new Date(result.createdAt).getTime();
+      const closestLog = candidateLogs.reduce((closest, log) => {
+        const diff = Math.abs(new Date(log.createdAt).getTime() - resultTime);
+        if (!closest || diff < closest.diff) {
+          return { log, diff };
+        }
+        return closest;
+      }, null);
+
+      if (closestLog) {
+        await CheatingLog.deleteOne({ _id: closestLog.log._id });
+      }
+    }
+  }
+
+  await Result.deleteOne({ _id: resultId });
+
+  res.status(200).json({ message: "Attempt and its proctoring log deleted." });
+});
 
 export {
   saveResult,
   getResultsByExamId,
   getUserResults,
+  deleteResult,
   toggleResultVisibility,
   getAllResults,
   getAttemptCount,

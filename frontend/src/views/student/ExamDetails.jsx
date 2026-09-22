@@ -37,6 +37,7 @@ import axiosInstance from '../../axios';
 import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import ShuffleOutlinedIcon from '@mui/icons-material/ShuffleOutlined';
+import PreviewIcon from '@mui/icons-material/Preview';
 
 const buildInstructionItems = (exam) => {
   const items = [
@@ -52,6 +53,10 @@ const buildInstructionItems = (exam) => {
       icon: <BlockOutlinedIcon color="action" />,
       text: 'Switching tabs, moving your cursor off the exam window, and copy/paste are all detected and logged.',
     },
+    {
+      icon: <PreviewIcon color="action" />,
+      text: "Make sure you are decently dressed and in a well-lit environment. Any flagged moments will be screenshotted and reviewed by your lecturer.",
+    }
   ];
 
   if (exam?.allowBackNavigation) {

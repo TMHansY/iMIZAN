@@ -11,18 +11,18 @@ const Exams = () => {
   console.log('Exam USer ', userExams);
 
   if (isLoading) {
-    return <div>Loading...</div>; // You can replace this with a loading spinner component
+    return <div>Loading...</div>; // can replace this with a loading spinner component
   }
 
   if (isError) {
-    return <div>Error fetching exams.</div>; // You can handle errors more gracefully
+    return <div>Error fetching exams.</div>; 
   }
 
   return (
     <PageContainer title="Exams" description="List of exams">
       <Grid container spacing={3}>
         {userExams.map((exam) => (
-          <Grid item sm={6} md={4} lg={3} key={exam._id}>
+          <Grid item xs={12} sm={6} md={4} lg={3} key={exam._id}>
             <BlankCard>
               <ExamCard exam={exam} />
             </BlankCard>
