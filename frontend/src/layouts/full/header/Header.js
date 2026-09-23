@@ -9,8 +9,6 @@ import { IconMenu } from '@tabler/icons-react';
 import { useSelector } from 'react-redux';
 
 const Header = (props) => {
-  // const lgUp = useMediaQuery((theme) => theme.breakpoints.up('lg'));
-  // const lgDown = useMediaQuery((theme) => theme.breakpoints.down('lg'));
   const { userInfo } = useSelector((state) => state.auth);
 
   const AppBarStyled = styled(AppBar)(({ theme }) => ({

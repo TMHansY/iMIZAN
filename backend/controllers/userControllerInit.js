@@ -4,9 +4,6 @@ import asyncHandler from "express-async-handler";
 // route POST /api/users/auth
 // @access public
 const authUser = asyncHandler(async (req, res) => {
-  // testing error middle ware  dummy error
-  // res.status(401);
-  // throw new Error("This is Dummy Error to check if middleware working or not...")
   res.status(200).json({ message: "Auth User" });
 });
 

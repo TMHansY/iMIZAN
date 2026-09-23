@@ -38,7 +38,7 @@ export const CheatingLogProvider = ({ children }) => {
           newLog.tabSwitchCount || prev.tabSwitchCount || 0,
         ),
       };
-      console.log('Updated cheating log:', updatedLog); // Debug log
+      console.log('Updated cheating log:', updatedLog);
       return updatedLog;
     });
   };
@@ -63,7 +63,7 @@ export const CheatingLogProvider = ({ children }) => {
       username: userInfo?.name || '',
       email: userInfo?.email || '',
     };
-    console.log('Reset cheating log:', resetLog); // Debug log
+    console.log('Reset cheating log:', resetLog);
     setCheatingLog(resetLog);
   };
   
@@ -72,11 +72,6 @@ export const CheatingLogProvider = ({ children }) => {
       {children}
     </CheatingLogContext.Provider>
   );
-  /* return (
-    <CheatingLogContext.Provider value={{ cheatingLog, updateCheatingLog, resetCheatingLog }}>
-      {children}
-    </CheatingLogContext.Provider>
-  ); */
 };
 
 export const useCheatingLog = () => {

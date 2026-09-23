@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 
-// Define a schema for the cheating log
 const cheatingLogSchema = new mongoose.Schema(
   {
     noFaceCount: { type: Number, default: 0 },
@@ -29,7 +28,6 @@ const cheatingLogSchema = new mongoose.Schema(
   }
 );
 
-// Create a model using the schema
 const CheatingLog = mongoose.model("CheatingLog", cheatingLogSchema);
 
 export default CheatingLog;

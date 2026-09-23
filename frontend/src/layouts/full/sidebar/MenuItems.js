@@ -103,18 +103,6 @@ const Menuitems = [
     icon: IconShieldCheck,
     href: '/admin/courses',
   },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Exam  Sale comp',
-  //   icon: IconPlayerPlayFilled,
-  //   href: '/generate-report',
-  // },
-  // {
-  //   id: uniqueId(),
-  //   title: 'Sample Page',
-  //   icon: IconAperture,
-  //   href: '/sample-page',
-  // },
 ];
 
 export default Menuitems;

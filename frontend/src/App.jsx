@@ -3,7 +3,7 @@ import { CheatingLogProvider, useCheatingLog } from './context/CheatingLogContex
 function App() {
   const { cheatingLog, updateCheatingLog, resetCheatingLog } = useCheatingLog();
 
-  return <CheatingLogProvider>{/* Your existing app content */}</CheatingLogProvider>;
+  return <CheatingLogProvider></CheatingLogProvider>;
 }
 
 export default App;

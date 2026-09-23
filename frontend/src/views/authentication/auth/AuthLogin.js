@@ -78,8 +78,6 @@ const AuthLogin = ({ formik, title, subtitle, subtext }) => {
             <FormControlLabel control={<Checkbox defaultChecked />} label="Remember this Device" />
           </FormGroup>
           <Typography
-            // component={Link}
-            // to="/"
             fontWeight="500"
             sx={{
               textDecoration: 'none',
@@ -97,7 +95,7 @@ const AuthLogin = ({ formik, title, subtitle, subtext }) => {
           size="large"
           fullWidth
           type="submit"
-          onClick={handleSubmit} // Call the HandleSubmit function on button click
+          onClick={handleSubmit}
         >
           Sign In
         </Button>

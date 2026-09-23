@@ -18,7 +18,6 @@ connectDB();
 const app = express();
 const port = process.env.PORT || 5050;
 
-// to parse req body
 app.use(express.json());
 app.use(
   cors({
@@ -42,15 +41,10 @@ app.use("/api/users", resultRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 
-// we we are deploying this in production
-// make frontend build then
 if (process.env.NODE_ENV === "production") {
   const __dirname = path.resolve();
-  // we making front build folder static to serve from this app
   app.use(express.static(path.join(__dirname, "/frontend/build")));
 
-  // if we get an routes that are not define by us we show then index html file
-  // every enpoint that is not api/users go to this index file
   app.get("*", (req, res) =>
     res.sendFile(path.resolve(__dirname, "frontend", "build", "index.html"))
   );
@@ -68,10 +62,3 @@ app.use(errorHandler);
 app.listen(port, () => {
   console.log(`server is running on http://localhost:${port}`);
 });
-
-// Todos:
-// -**POST /api/users**- Register a users
-// -**POST /api/users/auth**- Authenticate a user and get token
-// -**POST /api/users/logout**- logou user and clear cookie
-// -**GET /api/users/profile**- Get user Profile
-// -**PUT /api/users/profile**- Update user Profile

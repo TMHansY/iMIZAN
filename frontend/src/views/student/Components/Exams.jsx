@@ -6,12 +6,11 @@ import ExamCard from './ExamCard';
 import { useGetExamsQuery } from 'src/slices/examApiSlice';
 
 const Exams = () => {
-  // Fetch exam data from the backend using useGetExamsQuery
   const { data: userExams, isLoading, isError } = useGetExamsQuery();
   console.log('Exam USer ', userExams);
 
   if (isLoading) {
-    return <div>Loading...</div>; // can replace this with a loading spinner component
+    return <div>Loading...</div>;
   }
 
   if (isError) {

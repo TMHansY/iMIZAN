@@ -1,7 +1,6 @@
 import { useMediaQuery, Box, Drawer, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
 import SidebarItems from './SidebarItems';
-// import { Upgrade } from './Updrade';
 
 const Sidebar = (props) => {
   const lgUp = useMediaQuery((theme) => theme.breakpoints.up('md'));
@@ -72,7 +71,6 @@ const Sidebar = (props) => {
               {/* Sidebar Items */}
               {/* ------------------------------------------- */}
               <SidebarItems />
-              {/* <Upgrade /> */}
             </Box>
           </Box>
         </Drawer>
@@ -124,7 +122,6 @@ const Sidebar = (props) => {
       {/* Sidebar For Mobile */}
       {/* ------------------------------------------- */}
       <SidebarItems />
-      {/* <Upgrade /> */}
     </Drawer>
   );
 };

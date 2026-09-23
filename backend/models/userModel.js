@@ -41,14 +41,11 @@ const userSchema = mongoose.Schema(
 );
 // Match user entered password to hashed password in database
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  // this contain User Oject
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
 // Encrypt password using bcrypt
 userSchema.pre("save", async function (next) {
-  // if this user obj is not modified mode next
-  // else if user obj is create or modified like during update then hash password
   if (!this.isModified("password")) {
     next();
   }

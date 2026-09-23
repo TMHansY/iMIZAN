@@ -9,13 +9,9 @@ const FullLayout = Loadable(lazy(() => import('../layouts/full/FullLayout')));
 const ExamLayout = Loadable(lazy(() => import('../layouts/full/ExamLayout')));
 
 /* ****Pages***** */
-// const Dashboard = Loadable(lazy(() => import('../views/dashboard/Dashboard')));
 const SamplePage = Loadable(lazy(() => import('../views/sample-page/SamplePage')));
 const Success = Loadable(lazy(() => import('../views/Success')));
 
-// const Icons = Loadable(lazy(() => import('../views/icons/Icons')));
-// const TypographyPage = Loadable(lazy(() => import('../views/utilities/TypographyPage')));
-// const Shadow = Loadable(lazy(() => import('../views/utilities/Shadow')));
 //Student Routes
 
 const TestPage = Loadable(lazy(() => import('./../views/student/TestPage')));
@@ -48,8 +44,6 @@ const CourseManagement = Loadable(lazy(() => import('../views/admin/CourseManage
 
 const Router = createBrowserRouter(
   createRoutesFromElements(
-    // Every router we create will now go in here as
-    // they going to be child of our main App component
     <>
       {/* // Private Routes */}
       <Route path="" element={<PrivateRoute />} errorElement={<Error />}>
@@ -93,7 +87,6 @@ const Router = createBrowserRouter(
         <Route path="404" element={<Error />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/login" element={<Login />} />
-        {/* <Route path="*" element={<Navigate to="/auth/404" />} /> */}
       </Route>
     </>,
   ),

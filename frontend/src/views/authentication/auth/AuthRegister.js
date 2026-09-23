@@ -37,10 +37,8 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
             onBlur={handleBlur}
             error={touched.name && errors.name ? true : false}
             helperText={touched.name && errors.name ? errors.name : null}
-            // onChange={onNameChange} // Call the callback function on change
             fullWidth
             required
-            //   size="small"
           />
 
           <Typography
@@ -65,8 +63,6 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
             helperText={touched.email && errors.email ? errors.email : null}
             required
             fullWidth
-            // onChange={onEmailChange} // Call the callback function on change
-            //   size="small"
           />
           
           <Typography
@@ -115,8 +111,6 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
             helperText={touched.password && errors.password ? errors.password : null}
             required
             fullWidth
-            // onChange={onPasswordChange} // Call the callback function on change
-            //   size="small"
           />
           <Typography
             variant="subtitle1"
@@ -143,8 +137,6 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
             }
             fullWidth
             required
-            // onChange={onConfirmPasswordChange} // Call the callback function on change
-            //   size="small"
           />
           <Typography
             variant="subtitle1"
@@ -165,25 +157,17 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
             onChange={handleChange}
             onBlur={handleBlur}
             error={!!(touched.role && errors.role)}
-            // value={userRole}
-            // onChange={onRoleChange} // Call the callback function on change
-            // inputProps={{ 'aria-label': 'Without label' }}
-            //   size="small"
           >
             <MenuItem value="student">Student</MenuItem>
             <MenuItem value="lecturer">Lecturer</MenuItem>
           </Select>
         </Stack>
         <Button
-          // size="small"
           color="primary"
           variant="contained"
           size="large"
           fullWidth
-          // component={Link}
-          // to="/auth/login"
           onClick={handleSubmit}
-          // onClick={onSubmit} // Call the callback function on button click
         >
           Sign Up
         </Button>

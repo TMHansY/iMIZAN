@@ -106,8 +106,6 @@ const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent, isLecturer })
             helperText={touched.password && errors.password ? errors.password : null}
             required
             fullWidth
-            // onChange={onPasswordChange} // Call the callback function on change
-            //   size="small"
           />
           <Typography
             variant="subtitle1"
@@ -134,20 +132,14 @@ const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent, isLecturer })
             }
             fullWidth
             required
-            // onChange={onConfirmPasswordChange} // Call the callback function on change
-            //   size="small"
           />
         </Stack>
         <Button
-          // size="small"
           color="primary"
           variant="contained"
           size="large"
           fullWidth
-          // component={Link}
-          // to="/auth/login"
           onClick={handleSubmit}
-          // onClick={onSubmit} // Call the callback function on button click
         >
           Update
         </Button>
