@@ -6,8 +6,6 @@ const Success = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // You can add any additional logic here
-    // For example, if you want to automatically redirect after a certain time
     setTimeout(() => {
       navigate('/');
     }, 5000); // Redirect after 5 seconds
