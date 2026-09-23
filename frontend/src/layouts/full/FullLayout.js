@@ -14,6 +14,7 @@ const MainWrapper = styled('div')(() => ({
 const PageWrapper = styled('div')(() => ({
   display: 'flex',
   flexGrow: 1,
+  minWidth: 0,
   paddingBottom: '60px',
   flexDirection: 'column',
   zIndex: 1,
@@ -50,7 +51,8 @@ const FullLayout = () => {
         {/* ------------------------------------------- */}
         <Container
           sx={{
-            paddingTop: '20px',
+            paddingTop: { xs: '24px', md: '32px' },
+            px: { xs: 2, sm: 3, lg: 4 },
             maxWidth: '1200px',
           }}
         >

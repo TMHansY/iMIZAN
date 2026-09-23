@@ -1,180 +1,269 @@
-# iMIZAN — Setup Guide
+# iMIZAN
 
-Follow these steps in order. You will **not** need to edit any code — just install a few things, create two free accounts, and fill in config files.
+An online examination platform for managing courses, assessments, and results. iMIZAN provides separate workspaces for administrators, lecturers, and students, with browser-based proctoring and lecturer review of exam attempts.
 
----
+The interface supports responsive layouts and a persistent light/dark theme.
 
-## 1. Install prerequisites (macOS)
+## Contents
 
-Open **Terminal** and run each of these one at a time:
+- [Features](#features)
+- [Technology stack](#technology-stack)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [First-time setup](#first-time-setup)
+- [Development commands](#development-commands)
+- [Project structure](#project-structure)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+| Workspace | Capabilities |
+| --- | --- |
+| Administrator | Approve accounts, manage users and courses, assign lecturers, and view platform statistics. |
+| Lecturer | Create and edit exams, manage questions and enrollment requests, review results and proctoring logs, and set pass/fail decisions. |
+| Student | Apply to courses, take available exams, view released results, and review answers when permitted. |
+
+- **Configurable assessments:** multiple-choice questions, question images, time limits, availability windows, attempt limits, optional back navigation, and question/option randomization.
+- **Proctoring support:** camera readiness checks, face and person detection, phone detection, tab inactivity tracking, and screenshot logs.
+- **Result review:** automatic scoring, lecturer overrides, and controls for releasing results to students.
+- **Account access:** email or ID-number login, administrator approval, and role-specific navigation.
+- **Appearance:** light and dark modes, a visible theme toggle, and a locally saved preference.
+
+Proctoring flags provide context for lecturer review; they do not establish misconduct on their own.
+
+## Technology stack
+
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React, Material UI, React Router, Redux Toolkit / RTK Query |
+| Forms | Formik, Yup |
+| Backend | Node.js, Express |
+| Database | MongoDB, Mongoose |
+| Authentication | JWT cookies, bcrypt |
+| Proctoring | TensorFlow.js, COCO-SSD, face-api, react-webcam |
+| Image storage | Uploadcare |
+| Email notifications | Resend |
+| Frontend tooling | Create React App, Jest, React Testing Library |
+
+## Getting started
+
+### Prerequisites
+
+- Node.js and npm installed locally. The repository does not currently pin a Node.js version.
+- Git, or a downloaded copy of the repository.
+- A MongoDB database, either local or hosted on MongoDB Atlas.
+- An Uploadcare project for question images and proctoring screenshots.
+- A webcam and browser camera permission to use the proctored exam workflow.
+
+### 1. Clone and install
 
 ```bash
-# Install Homebrew (skip if you already have it)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install Node.js and Git
-brew install node git
-```
-
-Check they installed correctly:
-```bash
-node -v
-npm -v
-git -v
-```
-Each should print a version number.
-
----
-
-## 2. Get the project files
-
-You should have received the project as a folder or a git repository link. If it's a link:
-
-```bash
-cd ~
-git clone https://github.com/TMHansY/iMIZAN
+git clone https://github.com/TMHansY/iMIZAN.git
 cd iMIZAN
+npm install
+npm install --prefix frontend
 ```
 
-If you were given a `.zip` folder instead, unzip it and `cd` into it in Terminal.
+Both the root and frontend dependencies are required. The face-detection packages are already included in the frontend dependencies.
 
----
+### 2. Configure the application
 
-## 3. Create a free MongoDB Atlas database
-
-This is where all exam data, users, and results are stored.
-
-1. Go to **https://www.mongodb.com/cloud/atlas/register** and sign up (free).
-2. When prompted to create a cluster, choose the **M0 Free** tier. Pick any region close to you.
-3. Click **Create Deployment**.
-4. Under **Security Quickstart**, create a database user:
-   - Username: anything simple, e.g. `examapp`
-   - Password: click **Autogenerate Secure Password** and **copy it somewhere safe** — you won't see it again.
-5. Under **network access**, click **Add My Current IP Address**.
-6. Click **Finish and Close**.
-7. Go to **Database** in the left sidebar → click **Connect** on your cluster → choose **Drivers** → select **Node.js**.
-8. Copy the connection string shown. It looks like:
-   ```
-   mongodb+srv://examapp:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
-   ```
-9. Replace `<password>` with your actual password from step 4, and add a database name before the `?`, like this:
-   ```
-   mongodb+srv://examapp:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/proctoai?retryWrites=true&w=majority
-   ```
-   **Keep this final string — you'll paste it into a config file in Step 5.**
-
-   ⚠️ If your password contains special characters like `@ # % /`, they need to be "URL-encoded" (e.g. `@` becomes `%40`). Easiest fix: when generating the password in step 4, regenerate until you get one with only letters and numbers.
-
----
-
-## 4. Create a free Uploadcare account (for cheating-detection screenshots)
-
-This is where screenshots taken during exams (face not visible, phone detected, etc.) get stored.
-
-1. Go to **https://uploadcare.com/** and sign up for a free account.
-2. Create a new project when prompted.
-3. In your project dashboard, find your **Public Key** — copy it.
-4. Also find your **Delivery** settings/tab in the project dashboard — it will show your project's CDN subdomain, something like:
-   ```
-   5u5k52y8w7.ucarecd.net
-   ```
-   Copy this too. You'll need **both** the Public Key and this subdomain in the next step.
-
----
-
-## 5. Fill in the config file
-
-In the project folder, find the file named `.env.example` in the root folder. Make a copy of it named `.env`:
+Copy the root environment template:
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` in any text editor (TextEdit, VS Code, etc.) and fill in these values:
+Alternatively, duplicate `.env.example` in your file manager and rename the copy to `.env`.
 
-```
+Set the values in the new file:
+
+```dotenv
 PORT=5050
 NODE_ENV=development
-MONGO_URL=<paste your full MongoDB connection string from Step 3 here>
-JWT_SECRET=<type any random string of letters/numbers here, e.g. mySecretKey12345>
+MONGO_URL=mongodb://127.0.0.1:27017/imizan
+JWT_SECRET=replace_with_a_randomly_generated_secret
 ```
 
-Save and close the file.
+Use your Atlas connection string instead of the local MongoDB URL if applicable. Include a database name, configure database credentials and network access, and URL-encode special characters in the username or password.
 
-### Uploadcare key
-The Uploadcare **public key** and **CDN subdomain** are already set inside the code (in `frontend/src/views/student/Components/WebCam.jsx`). If you were given your **own** fresh Uploadcare project (recommended, since the original one may stop working), ask whoever gave you this project to update these two values for you, or if you're comfortable, open that file and update:
-
-```js
-const client = new UploadClient({ 
-  publicKey: 'YOUR_PUBLIC_KEY_HERE',
-  baseCDN: 'https://YOUR_SUBDOMAIN_HERE.ucarecd.net',
-});
-```
-
-replacing the key and subdomain with the ones you copied in Step 4. This is the only "code" you should ever need to touch — just replacing two text values, not writing new code.
-
----
-
-## 6. Install the project's dependencies
-
-Still in Terminal, in the project's root folder:
+Generate a JWT secret with:
 
 ```bash
-npm install
-cd frontend
-npm install
-npm install @vladmandic/face-api
-cd ..
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-This may take a few minutes and will show some warnings — that's normal, ignore them unless the command actually stops with an error.
+Paste the output into `JWT_SECRET`. Keep `.env` out of version control.
 
----
+Configure Uploadcare as described in [Configuration](#configuration) before using image uploads.
 
-## 7. Run the app
-
-From the project's root folder:
+### 3. Start development servers
 
 ```bash
 npm run dev
 ```
 
-Wait until you see something like:
+| Service | Local address |
+| --- | --- |
+| Frontend | http://localhost:3000 |
+| Backend | http://localhost:5050 |
+
+The frontend development server proxies API requests to port `5050`. If you change the backend port, also update the `proxy` value in [frontend/package.json](frontend/package.json).
+
+## Configuration
+
+### Backend environment variables
+
+Set these in the root `.env` file:
+
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | Backend port; defaults to `5050` when unset. |
+| `NODE_ENV` | Use `development` locally or `production` to serve the frontend build through Express. |
+| `MONGO_URL` | MongoDB connection string. Required. |
+| `JWT_SECRET` | Secret used to sign authentication tokens. Required. |
+| `RESEND_API_KEY` | Resend API key for approval/rejection emails. Needed only when configuring email delivery. |
+
+### Frontend API address
+
+`REACT_APP_BACKEND_URL` sets the backend origin for frontend API requests. For the local proxy setup, leave it unset. For a separately hosted backend, set it in `frontend/.env` or the frontend build environment:
+
+```dotenv
+REACT_APP_BACKEND_URL=https://your-api.example.com
 ```
-server is running on http://localhost:5050
-MongoDB Connected:
-webpack compiled with 2 warnings
+
+Restart the frontend development server or rebuild after changing this value. Frontend environment variables are included in the browser bundle; do not place private credentials there.
+
+### Uploadcare
+
+Image uploads use [frontend/src/utils/uploadcareClient.js](frontend/src/utils/uploadcareClient.js). Set its `publicKey` and `baseCDN` to your own project's values:
+
+```js
+export const uploadcareClient = new UploadClient({
+  publicKey: 'YOUR_PUBLIC_KEY',
+  baseCDN: 'https://YOUR_PROJECT_CDN_DOMAIN',
+});
 ```
 
-Your browser should automatically open to `http://localhost:3000`. If it doesn't, open it manually.
+This client is shared by question-image uploads and proctoring screenshots. The public key is intended for browser use; private Uploadcare credentials do not belong in this file.
 
-**Use Google Chrome**, not Safari — Safari blocks some cookies this app needs for login to work properly on localhost.
+### Email notifications
 
----
+To enable account approval/rejection emails:
 
-## 8. First-time use
+1. Add `RESEND_API_KEY` to the root `.env` file.
+2. Replace the placeholder `from: "-"` in [backend/utils/sendEmail.js](backend/utils/sendEmail.js) with an authorized sender address for your Resend setup.
 
-1. Register a new account — choose **Lecturer** if you'll be creating exams, or **Student** if you'll be taking them.
-2. Log in and explore — create an exam as a Lecturer, or join one as a Student.
+The sender is currently configured in code, not through an environment variable. The helper is designed to keep approval/rejection actions working when email delivery fails.
 
----
+## First-time setup
+
+New registrations require administrator approval before login. The registration screen offers student and lecturer roles; there is no administrator bootstrap script.
+
+For a new database that you administer:
+
+1. Register your own account through the application.
+2. In MongoDB Compass, Atlas, or `mongosh`, locate that account in the `users` collection of the application's database.
+3. Set `role` to `admin`, `isApproved` to `true`, and `hasBeenApproved` to `true`.
+4. Sign in with that account to manage subsequent registrations.
+
+For example, after selecting the correct application database in `mongosh`:
+
+```js
+db.users.updateOne(
+  { email: 'your-admin@example.com' },
+  { $set: { role: 'admin', isApproved: true, hasBeenApproved: true } }
+);
+```
+
+Replace the email with the account you registered. Its password should remain the hash created by the application.
+
+A typical workflow is:
+
+1. An administrator approves lecturer/student accounts and creates a course assigned to a lecturer.
+2. A student applies to join the course; the lecturer reviews the application.
+3. The lecturer creates an exam and adds its questions.
+4. The enrolled student completes the camera check and takes the exam within its availability window.
+5. The lecturer reviews results and proctoring logs, makes any required decision, and releases results.
+
+## Development commands
+
+Run these from the repository root:
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the backend and frontend together. |
+| `npm run server` | Start the backend with Nodemon. |
+| `npm run client` | Start the frontend development server. |
+| `npm start` | Start the backend without automatic reload. |
+| `npm run build --prefix frontend` | Build the frontend into `frontend/build`. |
+| `npm run build` | Install frontend dependencies, then build the frontend. |
+| `npm test --prefix frontend -- --watchAll=false` | Run frontend tests once. |
+
+The root `npm test` command is a placeholder and exits with an error. Use the frontend test command above. The current theme tests cover preference persistence, toggle behavior, and dark-mode contrast; they are not a full end-to-end test suite.
+
+## Project structure
+
+```text
+backend/
+  config/          Database connection
+  controllers/     Request handlers and business logic
+  middleware/      Authentication and error handling
+  models/          Mongoose schemas
+  routes/          API routes
+  utils/           Tokens, email, and ownership helpers
+  server.js        Express entry point
+frontend/
+  public/models/   Face-detection model assets
+  src/
+    components/    Shared UI components
+    context/       Theme and proctoring state
+    layouts/       Navigation and page layouts
+    slices/        Redux state and API definitions
+    theme/         Colours, typography, and component styles
+    utils/         Shared clients and utilities
+    views/         Authentication and role-specific screens
+.env.example       Backend configuration template
+```
+
+## Deployment
+
+For an Express-hosted frontend:
+
+1. Install root and frontend dependencies.
+2. Run `npm run build --prefix frontend`.
+3. Set `NODE_ENV=production` and the required backend environment variables.
+4. Run `npm start` from the repository root.
+
+Express serves `frontend/build` in production. For a separate frontend deployment, set `REACT_APP_BACKEND_URL` before building and update the allowed origins in [backend/server.js](backend/server.js).
+
+Authentication uses HTTP-only cookies configured with `Secure` and `SameSite=None`. Use HTTPS for deployed environments and verify credentialed requests and cookie handling for your chosen frontend/backend origins. Camera access also requires a browser-supported secure context.
 
 ## Troubleshooting
 
-**"Port 5000 already in use" error when starting the server:**
-This project is already configured to use port `5050` instead, so you shouldn't see this. If you do, check your `.env` file has `PORT=5050`.
+| Symptom | What to check |
+| --- | --- |
+| Backend fails to connect to MongoDB | Check `MONGO_URL`, database credentials, and Atlas network access or the local MongoDB service. |
+| Login reports pending approval | Have an administrator approve the account. For a fresh database, follow [First-time setup](#first-time-setup). |
+| Login succeeds but protected requests fail | Inspect the browser's cookie warnings and network requests. Verify API origin, allowed CORS origins, and whether the JWT cookie is stored and sent. |
+| Backend port is already in use | Stop the conflicting service or update `PORT` and the frontend proxy together. |
+| Camera check fails | Allow camera access, close other applications using the webcam, and check browser permissions and the page's secure context. |
+| Images fail to upload or load | Verify the Uploadcare public key and CDN domain in the shared upload client; inspect failed upload requests. |
+| Proctoring models fail to load | Check requests to `/models` and external model resources. Ensure the model files in `frontend/public/models` are included in the frontend deployment. |
+| Approval emails are not delivered | Check the Resend API key, sender configuration, and backend logs. |
+| Theme changes do not persist | Browser storage may be blocked or cleared. The toggle still works for the current session. |
 
-**Login works but nothing else does (blank pages, errors after login):**
-Make sure you're using Chrome, not Safari.
+When reporting an issue, include the relevant screen, steps to reproduce, expected and actual behavior, and sanitized browser/server errors. Remove credentials and student data from logs or screenshots before sharing them.
 
-**`npm install` fails with a permissions error (`EACCES`):**
-Run this once, then try `npm install` again:
-```bash
-sudo chown -R $(whoami) ~/.npm
-```
+## Contributing
 
-**Screenshots don't show up in the cheating log:**
-Double check the Uploadcare public key and subdomain in `WebCam.jsx` match your own Uploadcare project exactly, including the `https://` prefix on the subdomain.
+Open an issue to discuss substantial changes. For pull requests, describe the problem, the change, and how it was checked. Include screenshots for UI changes where helpful, and check both themes and mobile layouts.
 
-**Something else breaks:**
-Take a screenshot of the error (from the Terminal or the browser console — press F12 to open it) and send it to whoever gave you this project.
+Run the frontend tests and production build before submitting. Keep unrelated changes separate and do not commit secrets or generated build files.
+
+## License
+
+The root `package.json` declares `ISC`. A standalone license file is not currently included in the repository.

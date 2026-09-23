@@ -271,6 +271,13 @@ export default function ExamDetails() {
         onClose={() => setCameraDialogOpen(false)}
         maxWidth="xs"
         fullWidth
+        PaperProps={{
+          sx: {
+            maxWidth: 444,
+            width: { xs: 'calc(100% - 32px)', sm: 'calc(100% - 64px)' },
+            m: { xs: 2, sm: 4 },
+          },
+        }}
       >
         <DialogTitle>Camera Check</DialogTitle>
         <DialogContent>

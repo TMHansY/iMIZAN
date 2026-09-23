@@ -12,13 +12,8 @@ const DashboardCard = ({
   headsubtitle,
   middlecontent,
 }) => {
-
   return (
-    <Card
-      sx={{ padding: 0 }}
-      elevation={9}
-      variant={undefined}
-    >
+    <Card sx={{ padding: 0 }} elevation={9} variant={undefined}>
       {cardheading ? (
         <CardContent>
           <Typography variant="h5">{headtitle}</Typography>
@@ -27,13 +22,13 @@ const DashboardCard = ({
           </Typography>
         </CardContent>
       ) : (
-        <CardContent sx={{ p: "30px" }}>
+        <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
           {title ? (
             <Stack
-              direction="row"
+              direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
               justifyContent="space-between"
-              alignItems={'center'}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
               mb={3}
             >
               <Box>

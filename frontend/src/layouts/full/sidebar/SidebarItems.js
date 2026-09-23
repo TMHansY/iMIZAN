@@ -6,7 +6,7 @@ import NavItem from './NavItem';
 import NavGroup from './NavGroup/NavGroup';
 import { useSelector } from 'react-redux';
 
-const SidebarItems = () => {
+const SidebarItems = ({ onNavigate }) => {
   const { userInfo } = useSelector((state) => state.auth);
   const { pathname } = useLocation();
   const pathDirect = pathname;
@@ -22,24 +22,37 @@ const SidebarItems = () => {
           ) {
             return null; // Don't render this menu item for students
           }
-          if (
-            userInfo?.role === 'lecturer' &&
-            ['Courses'].includes(item.title)
-          ) {
+          if (userInfo?.role === 'lecturer' && ['Courses'].includes(item.title)) {
             return null; // Don't render this menu item for lecturers
           }
           if (
             userInfo?.role === 'admin' &&
-            ['Exams', 'Result', 'Courses', 'Create Exam', 'Add Questions', 'Course Enrollments', 'Exam Logs'].includes(item.title)
+            [
+              'Exams',
+              'Result',
+              'Courses',
+              'Create Exam',
+              'Add Questions',
+              'Course Enrollments',
+              'Exam Logs',
+            ].includes(item.title)
           ) {
             return null; // Don't render this menu item for admins
           }
 
-          if (userInfo?.role !== 'admin' && ['Pending Approvals', 'Account Management', 'System Stats', 'Course Management'].includes(item.title)) {
+          if (
+            userInfo?.role !== 'admin' &&
+            [
+              'Pending Approvals',
+              'Account Management',
+              'System Stats',
+              'Course Management',
+            ].includes(item.title)
+          ) {
             return null; // Only admins see the approvals page
           }
           // {/********SubHeader**********/}
-         if (item.subheader) {
+          if (item.subheader) {
             // Check if the user is a student and if the subheader should be hidden
             if (userInfo?.role === 'student' && item.subheader === 'Lecturer') {
               return null; // Don't render the "Lecturer" subheader for students
@@ -62,7 +75,9 @@ const SidebarItems = () => {
             // {/********If Sub Menu**********/}
             /* eslint no-else-return: "off" */
           } else {
-            return <NavItem item={item} key={item.id} pathDirect={pathDirect} />;
+            return (
+              <NavItem item={item} key={item.id} pathDirect={pathDirect} onClick={onNavigate} />
+            );
           }
         })}
       </List>

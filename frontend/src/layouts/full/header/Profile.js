@@ -9,7 +9,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Typography,
 } from '@mui/material';
 
 import { IconListCheck, IconUser } from '@tabler/icons-react';
@@ -49,7 +48,8 @@ const Profile = () => {
     <Box>
       <IconButton
         size="large"
-        aria-label="show 11 new notifications"
+        aria-label="Open account menu"
+        aria-expanded={Boolean(anchorEl2)}
         color="inherit"
         aria-controls="msgs-menu"
         aria-haspopup="true"
@@ -62,7 +62,7 @@ const Profile = () => {
       >
         <Avatar
           src={ProfileImg}
-          alt={ProfileImg}
+          alt={userInfo?.name || 'Account'}
           sx={{
             width: 35,
             height: 35,
@@ -83,6 +83,7 @@ const Profile = () => {
         sx={{
           '& .MuiMenu-paper': {
             width: '200px',
+            maxWidth: 'calc(100vw - 32px)',
           },
         }}
       >

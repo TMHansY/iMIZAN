@@ -1,7 +1,7 @@
+import ContentSkeleton from 'src/components/shared/ContentSkeleton';
 import React from 'react';
-import { Grid, Typography } from '@mui/material';
+import { Grid, Typography, Box, Alert } from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
-import BlankCard from '../../../components/shared/BlankCard';
 import ExamCard from './ExamCard';
 import { useGetExamsQuery } from 'src/slices/examApiSlice';
 
@@ -10,21 +10,39 @@ const Exams = () => {
   console.log('Exam USer ', userExams);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <ContentSkeleton />;
   }
 
   if (isError) {
-    return <div>Error fetching exams.</div>; 
+    return <Alert severity="error">Unable to load exams. Please try again later.</Alert>;
   }
 
   return (
     <PageContainer title="Exams" description="List of exams">
+      {userExams.length === 0 && (
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: 6,
+            px: 2,
+            bgcolor: 'background.paper',
+            borderRadius: 3,
+            border: '1px dashed',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="h5" mb={1}>
+            No exams available yet
+          </Typography>
+          <Typography color="text.secondary">
+            Your available assessments will appear here.
+          </Typography>
+        </Box>
+      )}
       <Grid container spacing={3}>
         {userExams.map((exam) => (
-          <Grid item xs={12} sm={6} md={4} lg={3} key={exam._id}>
-            <BlankCard>
-              <ExamCard exam={exam} />
-            </BlankCard>
+          <Grid item xs={12} sm={6} md={6} lg={4} key={exam._id}>
+            <ExamCard exam={exam} />
           </Grid>
         ))}
       </Grid>

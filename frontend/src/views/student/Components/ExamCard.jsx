@@ -2,7 +2,7 @@ import * as React from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
-import { IconButton, Stack, Box } from '@mui/material';
+import { IconButton, Stack, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '../../lecturer/components/DeleteIcon';
 import { useSelector } from 'react-redux';
@@ -16,16 +16,14 @@ import FactCheckIcon from '@mui/icons-material/FactCheck';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 
 const cardIcons = [MenuBookIcon, QuizIcon, AssignmentIcon, SchoolIcon, FactCheckIcon, EditNoteIcon];
-const cardColors = ['#5C6BC0', '#26A69A', '#EF5350', '#AB47BC', '#FFA726', '#42A5F5', '#66BB6A'];
-
-// Deterministic pick based on examId, so each exam always shows the same icon/color
+// Deterministic pick based on examId, so each exam always shows the same icon
 const pickFromId = (id, arr) => {
   const hash = (id || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return arr[hash % arr.length];
 };
 
 export default function ExamCard({ exam }) {
-  const { examName, duration, totalQuestions, examId, liveDate, deadDate } = exam;
+  const { examName, duration, totalQuestions, examId } = exam;
   const { userInfo } = useSelector((state) => state.auth);
   const isLecturer = userInfo?.role === 'lecturer';
 
@@ -33,7 +31,6 @@ export default function ExamCard({ exam }) {
   const isExamActive = true;
 
   const Icon = pickFromId(examId, cardIcons);
-  const iconBgColor = pickFromId(examId + 'color', cardColors);
 
   const handleCardClick = () => {
     if (isLecturer) {
@@ -45,22 +42,24 @@ export default function ExamCard({ exam }) {
   };
 
   return (
-    <Card>
-      <Box onClick={handleCardClick} sx={{ cursor: 'pointer' }}>
+    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <Box
           sx={{
-            height: { xs: 100, sm: 140 },
-            bgcolor: iconBgColor,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'transform 0.2s ease',
-            '&:hover': { transform: 'scale(1.03)' },
+            width: 48,
+            height: 48,
+            m: 2.5,
+            mb: 0,
+            borderRadius: 2,
+            bgcolor: 'primary.light',
+            color: 'primary.main',
+            display: 'grid',
+            placeItems: 'center',
           }}
         >
-          <Icon sx={{ fontSize: { xs: 48, sm: 64 }, color: 'white' }} />
+          <Icon sx={{ fontSize: 26 }} />
         </Box>
-        <CardContent>
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', flex: 1, p: 2.5 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
             <Typography
               gutterBottom
@@ -94,17 +93,29 @@ export default function ExamCard({ exam }) {
                 <DeleteIcon examId={examId} />
               </Stack>
             )}
-            
           </Stack>
 
           <Typography variant="body2" color="text.secondary">
-            MCQ
+            Multiple choice assessment
           </Typography>
 
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mt={1}>
-            <Typography variant="h6">{totalQuestions} ques</Typography>
-            <Typography color="textSecondary">{duration}</Typography>
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            gap={1}
+            alignItems="center"
+            justifyContent="space-between"
+            mt={2}
+            mb={2}
+          >
+            <Typography variant="h6">{totalQuestions} questions</Typography>
+            <Typography color="textSecondary">{duration} min</Typography>
           </Stack>
+          {!isLecturer && (
+            <Button variant="outlined" fullWidth onClick={handleCardClick} sx={{ mt: 'auto' }}>
+              View exam
+            </Button>
+          )}
         </CardContent>
       </Box>
     </Card>

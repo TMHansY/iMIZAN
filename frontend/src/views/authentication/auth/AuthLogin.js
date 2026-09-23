@@ -8,7 +8,6 @@ import {
   Stack,
   Checkbox,
 } from '@mui/material';
-import { Link } from 'react-router-dom';
 
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 
@@ -73,7 +72,13 @@ const AuthLogin = ({ formik, title, subtitle, subtext }) => {
             fullWidth
           />
         </Box>
-        <Stack justifyContent="space-between" direction="row" alignItems="center" my={2}>
+        <Stack
+          justifyContent="space-between"
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          gap={1}
+          my={2}
+        >
           <FormGroup>
             <FormControlLabel control={<Checkbox defaultChecked />} label="Remember this Device" />
           </FormGroup>

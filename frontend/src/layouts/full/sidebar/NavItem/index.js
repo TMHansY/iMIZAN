@@ -1,14 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { NavLink } from 'react-router-dom';
-import {
-  ListItemIcon,
-  ListItemButton,
-  ListItemText,
-  List,
-  styled,
-  useTheme,
-} from '@mui/material';
+import { ListItemIcon, ListItemButton, ListItemText, List, styled, useTheme } from '@mui/material';
 
 const NavItem = ({ item, level, pathDirect, onClick }) => {
   const Icon = item.icon;
@@ -17,8 +10,8 @@ const NavItem = ({ item, level, pathDirect, onClick }) => {
 
   const ListItemStyled = styled(ListItemButton)(() => ({
     whiteSpace: 'nowrap',
-    marginBottom: '2px',
-    padding: '8px 10px',
+    marginBottom: '4px',
+    padding: '10px 12px',
     borderRadius: '8px',
     backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
     color: theme.palette.text.secondary,
@@ -28,11 +21,12 @@ const NavItem = ({ item, level, pathDirect, onClick }) => {
       color: theme.palette.primary.main,
     },
     '&.Mui-selected': {
-      color: 'white',
-      backgroundColor: theme.palette.primary.main,
+      boxShadow: `inset 3px 0 0 ${theme.palette.primary.main}`,
+      color: theme.palette.primary.dark,
+      backgroundColor: theme.palette.primary.light,
       '&:hover': {
-        backgroundColor: theme.palette.primary.main,
-        color: 'white',
+        backgroundColor: theme.palette.primary.light,
+        color: theme.palette.primary.dark,
       },
     },
   }));

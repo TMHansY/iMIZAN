@@ -9,14 +9,14 @@ const NavGroup = ({ item }) => {
       fontWeight: '700',
       marginTop: theme.spacing(3),
       marginBottom: theme.spacing(0),
-      color: theme.palette.text.primary,
+      color: theme.palette.text.secondary,
       lineHeight: '26px',
+      letterSpacing: '0.1em',
+      fontSize: '0.65rem',
       padding: '3px 12px',
     }),
   );
-  return (
-    <ListSubheaderStyle>{item.subheader}</ListSubheaderStyle>
-  );
+  return <ListSubheaderStyle>{item.subheader}</ListSubheaderStyle>;
 };
 
 NavGroup.propTypes = {

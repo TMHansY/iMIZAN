@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Grid, Box, Card, Typography, Stack } from '@mui/material';
+import AuthLayout from './AuthLayout';
+import React, { useEffect } from 'react';
+import { Typography, Stack } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
 import PageContainer from 'src/components/container/PageContainer';
-import Logo from 'src/layouts/full/shared/logo/Logo';
 import AuthRegister from './auth/AuthRegister';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -56,10 +56,6 @@ const Register = () => {
     }
   }, [navigate, userInfo]);
 
-  const submitHandler = async (e) => {
-    e.preventDefault();
-  };
-
   const handleSubmit = async ({ name, email, idNumber, password, confirm_password, role }) => {
     if (password !== confirm_password) {
       toast.error('Passwords do not match');
@@ -68,7 +64,9 @@ const Register = () => {
         await register({ name, email, idNumber, password, role }).unwrap();
         formik.resetForm();
 
-        toast.success('Account created! Please wait for an admin to approve your account before logging in.');
+        toast.success(
+          'Account created! Please wait for an admin to approve your account before logging in.',
+        );
         navigate('/auth/login');
       } catch (err) {
         toast.error(err?.data?.message || err.error);
@@ -78,80 +76,38 @@ const Register = () => {
 
   return (
     <PageContainer title="Register" description="this is Register page">
-      <Box
-        sx={{
-          position: 'relative',
-          '&:before': {
-            content: '""',
-            background: 'radial-gradient(#d2f1df, #d3d7fa, #bad8f4)',
-            backgroundSize: '400% 400%',
-            animation: 'gradient 15s ease infinite',
-            position: 'absolute',
-            height: '100%',
-            width: '100%',
-            opacity: '0.3',
-          },
-        }}
-      >
-        <Grid container spacing={0} justifyContent="center" sx={{ height: '100vh' }}>
-          <Grid
-            item
-            xs={12}
-            sm={12}
-            lg={6}
-            xl={12}
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <Card elevation={9} sx={{ p: 2, zIndex: 1, width: '100%', maxWidth: '500px' }}>
-              <Box display="flex" alignItems="center" justifyContent="center">
-                <Typography
-                  variant="h4"
-                  component="h1"
-                  style={{
-                    fontWeight: 'bold',
-                    color: '#008000',
-                    margin: '20px 0',
-                    textAlign: 'center',
-                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
-                  }}
-                >
-                  iMIZAN
-                </Typography>
-              </Box>
-              <AuthRegister
-                formik={formik}
-                onSubmit={handleSubmit}
-                subtext={
-                  <Typography variant="subtitle1" textAlign="center" color="textSecondary" mb={1}>
-                    SECURE ONLINE EXAMINATION PLATFORM
-                  </Typography>
-                }
-                subtitle={
-                  <Stack direction="row" justifyContent="center" spacing={1} mt={3}>
-                    <Typography color="textSecondary" variant="h6" fontWeight="400">
-                      Already have an Account?
-                    </Typography>
-                    <Typography
-                      component={Link}
-                      to="/auth/login"
-                      fontWeight="500"
-                      sx={{
-                        textDecoration: 'none',
-                        color: 'primary.main',
-                      }}
-                    >
-                      Sign In
-                    </Typography>
-                    {isLoading && <Loader />}
-                  </Stack>
-                }
-              />
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
+      <AuthLayout title="Create your account" description="Join your learning community on iMIZAN.">
+        <AuthRegister
+          formik={formik}
+          onSubmit={handleSubmit}
+          subtitle={
+            <Stack
+              direction="row"
+              justifyContent="center"
+              spacing={1}
+              flexWrap="wrap"
+              useFlexGap
+              mt={3}
+            >
+              <Typography color="textSecondary" variant="h6" fontWeight="400">
+                Already have an Account?
+              </Typography>
+              <Typography
+                component={Link}
+                to="/auth/login"
+                fontWeight="500"
+                sx={{
+                  textDecoration: 'none',
+                  color: 'primary.main',
+                }}
+              >
+                Sign In
+              </Typography>
+              {isLoading && <Loader />}
+            </Stack>
+          }
+        />
+      </AuthLayout>
     </PageContainer>
   );
 };

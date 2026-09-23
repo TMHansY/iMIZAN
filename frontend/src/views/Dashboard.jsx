@@ -1,3 +1,5 @@
+import PageHeading from 'src/components/shared/PageHeading';
+import ContentSkeleton from 'src/components/shared/ContentSkeleton';
 import React, { useEffect, useState } from 'react';
 import {
   Grid,
@@ -10,11 +12,9 @@ import {
   ListItemButton,
   ListItemText,
   ListItemIcon,
-  CircularProgress,
   Divider,
 } from '@mui/material';
 import EventIcon from '@mui/icons-material/Event';
-import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import QuizIcon from '@mui/icons-material/Quiz';
 import EditIcon from '@mui/icons-material/Edit';
@@ -122,7 +122,7 @@ const Dashboard = () => {
     } else {
       loadStudentSummary();
     }
-    }, [examsData, isLecturer, isAdmin]);
+  }, [examsData, isLecturer, isAdmin]);
 
   const recentExams = [...(examsData || [])]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -131,17 +131,17 @@ const Dashboard = () => {
   const totalPending = pendingByExam.reduce((sum, e) => sum + e.pendingCount, 0);
 
   if ((!isAdmin && examsLoading) || loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
-      </Box>
-    );
+    return <ContentSkeleton />;
   }
 
   // --- Admin Dashboard ---
   if (isAdmin) {
     return (
       <PageContainer title="Dashboard" description="Account approvals overview">
+        <PageHeading
+          title="Dashboard"
+          description="Manage your community and keep approvals moving."
+        />
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
             <DashboardCard>
@@ -164,10 +164,7 @@ const Dashboard = () => {
                   {pendingUsers.map((user, index) => (
                     <React.Fragment key={user._id}>
                       {index > 0 && <Divider />}
-                      <ListItemButton
-                        onClick={() => navigate('/admin/approvals')}
-                        sx={{ py: 1.5 }}
-                      >
+                      <ListItemButton onClick={() => navigate('/admin/approvals')} sx={{ py: 1.5 }}>
                         <ListItemIcon>
                           <HowToRegIcon color="action" />
                         </ListItemIcon>
@@ -191,9 +188,16 @@ const Dashboard = () => {
   if (!isLecturer) {
     return (
       <PageContainer title="Dashboard" description="Your exam summary">
+        <PageHeading
+          title="Dashboard"
+          description="Upcoming assessments and latest progress"
+        />
         <Grid container spacing={3}>
           <Grid item xs={12} md={7}>
-            <DashboardCard title="Upcoming Exams" subtitle="Not yet answered, closest deadline first">
+            <DashboardCard
+              title="Upcoming Exams"
+              subtitle="Not yet answered, closest deadline first"
+            >
               {upcomingExams.length === 0 ? (
                 <Typography color="text.secondary">
                   Nothing upcoming — you're all caught up.
@@ -247,13 +251,17 @@ const Dashboard = () => {
     );
   }
 
-    // --- Lecturer Dashboard ---
+  // --- Lecturer Dashboard ---
   return (
     <PageContainer title="Dashboard" description="Your exam overview">
+      <PageHeading
+        title="Dashboard"
+        description="Keep track of assessments and submissions that need your attention."
+      />
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Stack spacing={3}>
-            <Stack direction="row" spacing={3}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
               <Box flex={1}>
                 <DashboardCard>
                   <Stack alignItems="center" spacing={1}>
@@ -317,7 +325,9 @@ const Dashboard = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary={entry.examName}
-                        secondary={`${entry.pendingCount} submission${entry.pendingCount > 1 ? 's' : ''} awaiting review`}
+                        secondary={`${entry.pendingCount} submission${
+                          entry.pendingCount > 1 ? 's' : ''
+                        } awaiting review`}
                       />
                     </ListItemButton>
                   </React.Fragment>

@@ -1,14 +1,7 @@
+import PageHeading from 'src/components/shared/PageHeading';
+import ContentSkeleton from 'src/components/shared/ContentSkeleton';
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Chip,
-  CircularProgress,
-} from '@mui/material';
+import { Grid, Card, CardContent, Typography, Button, Chip } from '@mui/material';
 import { toast } from 'react-toastify';
 import PageContainer from 'src/components/container/PageContainer';
 import axiosInstance from '../../axios';
@@ -52,18 +45,15 @@ const CoursesPage = () => {
     myEnrollments.find((e) => e.courseId === courseId)?.status;
 
   if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
-      </Box>
-    );
+    return <ContentSkeleton />;
   }
 
   return (
     <PageContainer title="Courses" description="Browse and apply to courses">
-      <Typography variant="h4" fontWeight={700} mb={3}>
-        Courses
-      </Typography>
+      <PageHeading
+        title="Courses"
+        description="Explore your courses and keep track of your enrollment."
+      />
       <Grid container spacing={3}>
         {courses.length === 0 ? (
           <Grid item xs={12}>
@@ -75,16 +65,32 @@ const CoursesPage = () => {
 
             return (
               <Grid item xs={12} sm={6} md={4} key={course.courseId}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6">{course.courseCode}</Typography>
-                    <Typography variant="body1" gutterBottom>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent
+                    sx={{
+                      p: 3,
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <Typography variant="overline" color="primary" fontWeight={700}>
+                      {course.courseCode}
+                    </Typography>
+                    <Typography variant="h5" gutterBottom>
                       {course.courseName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       {course.description || 'No description provided.'}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      mb={2}
+                      sx={{ mt: 'auto', pt: 2 }}
+                    >
                       Lecturer: {course.lecturer?.name || 'Unassigned'}
                     </Typography>
 

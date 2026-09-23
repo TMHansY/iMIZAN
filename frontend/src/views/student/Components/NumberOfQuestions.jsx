@@ -59,19 +59,28 @@ const NumberOfQuestions = ({
 
   return (
     <>
-      <Box position="sticky" top="0" zIndex={1} bgcolor="white" paddingY="10px" width="100%" px={3}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+      <Box
+        position="sticky"
+        top="0"
+        zIndex={1}
+        bgcolor="background.paper"
+        paddingY="10px"
+        width="100%"
+        px={3}
+      >
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+          gap={1}
+        >
           <Typography variant="h6">
             Question: {currentQuestionIndex + 1}/{totalQuestions}
           </Typography>
           <Typography variant="h6">Time Left: {formatTime(timeLeft)}</Typography>
           {allowBackNavigation && (
-            <Button
-              variant="contained"
-              color="success"
-              onClick={onSubmit}
-              disabled={!allAnswered}
-            >
+            <Button variant="contained" color="success" onClick={onSubmit} disabled={!allAnswered}>
               Submit Exam
             </Button>
           )}
@@ -85,21 +94,24 @@ const NumberOfQuestions = ({
               <Stack direction="row" alignItems="center" justifyContent="start">
                 {row.map((questionNumber) => {
                   const index = questionNumber - 1;
-                  const isAnswered = questions[index] && answeredQuestionIds.includes(questions[index]._id);
+                  const isAnswered =
+                    questions[index] && answeredQuestionIds.includes(questions[index]._id);
                   const isCurrent = index === currentQuestionIndex;
 
                   return (
                     <Avatar
                       key={questionNumber}
                       variant="rounded"
-                      style={{
+                      sx={{
                         width: '40px',
                         height: '40px',
                         fontSize: '20px',
                         cursor: allowBackNavigation ? 'pointer' : 'default',
                         margin: '3px',
-                        background: isAnswered ? '#66bb6a' : '#ccc',
-                        border: isCurrent ? '3px solid #1976d2' : 'none',
+                        bgcolor: isAnswered ? 'success.main' : 'action.disabledBackground',
+                        color: isAnswered ? 'success.contrastText' : 'text.primary',
+                        border: isCurrent ? '3px solid' : 'none',
+                        borderColor: 'primary.main',
                         opacity: allowBackNavigation ? 1 : 0.7,
                       }}
                       onClick={() => allowBackNavigation && onJumpToQuestion(index)}

@@ -1,22 +1,22 @@
 const typography = {
-  fontFamily: "'Plus Jakarta Sans', sans-serif;",
+  fontFamily: "'Plus Jakarta Sans', sans-serif",
   h1: {
     fontWeight: 600,
     fontSize: '2.25rem',
     lineHeight: '2.75rem',
-    fontFamily: "'Plus Jakarta Sans', sans-serif;",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
   h2: {
     fontWeight: 600,
     fontSize: '1.875rem',
     lineHeight: '2.25rem',
-    fontFamily: "'Plus Jakarta Sans', sans-serif;",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
   h3: {
     fontWeight: 600,
     fontSize: '1.5rem',
     lineHeight: '1.75rem',
-    fontFamily: "'Plus Jakarta Sans', sans-serif;",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
   },
   h4: {
     fontWeight: 600,
@@ -34,7 +34,7 @@ const typography = {
     lineHeight: '1.2rem',
   },
   button: {
-    textTransform: 'capitalize',
+    textTransform: 'none',
     fontWeight: 400,
   },
   body1: {

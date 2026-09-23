@@ -621,7 +621,19 @@ const ResultPage = () => {
       </Grid>
 
       {/* Review & Decide Dialog */}
-      <Dialog open={reviewDialogOpen} onClose={handleCloseReview} maxWidth="sm" fullWidth>
+      <Dialog
+        open={reviewDialogOpen}
+        onClose={handleCloseReview}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            maxWidth: (theme) => theme.breakpoints.values.sm,
+            width: { xs: 'calc(100% - 32px)', sm: 'calc(100% - 64px)' },
+            m: { xs: 2, sm: 4 },
+          },
+        }}
+      >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">
@@ -661,11 +673,11 @@ const ResultPage = () => {
                   {reviewLog.screenshots?.length > 0 ? (
                     <Grid container spacing={1}>
                       {reviewLog.screenshots.map((s, i) => (
-                        <Grid item xs={4} key={i}>
+                        <Grid item xs={12} sm={4} key={i}>
                           <img
                             src={s.url}
                             alt={s.type}
-                            style={{ width: '100%', borderRadius: 4 }}
+                            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain', borderRadius: 4 }}
                           />
                           <Typography variant="caption" display="block" textAlign="center">
                             {s.type}
@@ -698,7 +710,7 @@ const ResultPage = () => {
             </>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
           <Button onClick={() => handleSetDecision(null)} disabled={reviewLoading}>
             Reset to Automatic
           </Button>

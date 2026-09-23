@@ -1,129 +1,57 @@
-import { useMediaQuery, Box, Drawer, Typography } from '@mui/material';
+import { useMediaQuery, Box, Drawer, Typography, Stack } from '@mui/material';
 import { Link } from 'react-router-dom';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import SidebarItems from './SidebarItems';
 
-const Sidebar = (props) => {
-  const lgUp = useMediaQuery((theme) => theme.breakpoints.up('md'));
-
-  const sidebarWidth = '270px';
-
-  if (lgUp) {
-    return (
-      <Box
-        sx={{
-          width: sidebarWidth,
-          flexShrink: 0,
-        }}
+const Sidebar = ({ isMobileSidebarOpen, onSidebarClose }) => {
+  const desktop = useMediaQuery((theme) => theme.breakpoints.up('lg'));
+  const content = (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      <Stack
+        component={Link}
+        to="/dashboard"
+        onClick={onSidebarClose}
+        direction="row"
+        spacing={1.5}
+        sx={{ p: 3, alignItems: 'center', color: 'primary.main', textDecoration: 'none' }}
       >
-        {/* ------------------------------------------- */}
-        {/* Sidebar for desktop */}
-        {/* ------------------------------------------- */}
-        <Drawer
-          anchor="left"
-          open={props.isSidebarOpen}
-          variant="permanent"
-          PaperProps={{
-            sx: {
-              width: sidebarWidth,
-              boxSizing: 'border-box',
-            },
-          }}
-        >
-          {/* ------------------------------------------- */}
-          {/* Sidebar Box */}
-          {/* ------------------------------------------- */}
-          <Box
-            sx={{
-              height: '100%',
-            }}
-          >
-            {/* ------------------------------------------- */}
-            {/* Logo */}
-            {/* ------------------------------------------- */}
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                px: 3,
-                py: 2,
-                width: '100%',
-              }}
-            >
-              <Typography
-                component={Link}
-                to="/dashboard"
-                variant="h2"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: '1.2rem',
-                  color: 'primary.main',
-                  whiteSpace: 'nowrap',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                iMIZAN
-              </Typography>
-            </Box>
-
-            <Box>
-              {/* ------------------------------------------- */}
-              {/* Sidebar Items */}
-              {/* ------------------------------------------- */}
-              <SidebarItems />
-            </Box>
-          </Box>
-        </Drawer>
-      </Box>
-    );
-  }
-
-  return (
-    <Drawer
-      anchor="left"
-      open={props.isMobileSidebarOpen}
-      onClose={props.onSidebarClose}
-      variant="temporary"
-      PaperProps={{
-        sx: {
-          width: sidebarWidth,
-          boxShadow: (theme) => theme.shadows[8],
-        },
-      }}
-    >
-      {/* ------------------------------------------- */}
-      {/* Logo */}
-      {/* ------------------------------------------- */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          px: 2,
-          py: 2,
-          width: '100%',
-        }}
-      >
-        <Typography
-          component={Link}
-          to="/dashboard"
-          variant="h6"
+        <Box
           sx={{
-            fontWeight: 600,
-            fontSize: '1.2rem',
-            color: 'primary.main',
-            textDecoration: 'none',
-            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            width: 44,
+            height: 44,
+            bgcolor: 'primary.light',
+            borderRadius: 2,
           }}
         >
-          iMIZAN
-        </Typography>
-      </Box>
-      {/* ------------------------------------------- */}
-      {/* Sidebar For Mobile */}
-      {/* ------------------------------------------- */}
-      <SidebarItems />
-    </Drawer>
+          <SchoolOutlinedIcon />
+        </Box>
+        <Box>
+          <Typography variant="h3" fontWeight={700}>
+            iMIZAN
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Examination platform
+          </Typography>
+        </Box>
+      </Stack>
+      <SidebarItems onNavigate={desktop ? undefined : onSidebarClose} />
+    </Box>
+  );
+  return (
+    <Box sx={{ width: desktop ? 260 : 0, flexShrink: 0 }}>
+      <Drawer
+        variant={desktop ? 'permanent' : 'temporary'}
+        open={desktop || isMobileSidebarOpen}
+        onClose={onSidebarClose}
+        PaperProps={{
+          sx: { width: 260, maxWidth: '85vw', borderRight: '1px solid', borderColor: 'divider' },
+        }}
+      >
+        {content}
+      </Drawer>
+    </Box>
   );
 };
-
 export default Sidebar;

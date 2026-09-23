@@ -1,62 +1,55 @@
+import ThemeToggle from '../../../components/shared/ThemeToggle';
 import React from 'react';
-import { Box, AppBar, Toolbar, styled, Stack, IconButton, Typography } from '@mui/material';
-import PropTypes from 'prop-types';
-import _ from 'lodash';
-// components
-import Profile from './Profile';
-import NotificationBell from './NotificationBell';
+import { Box, AppBar, Toolbar, Stack, IconButton, Typography } from '@mui/material';
 import { IconMenu } from '@tabler/icons-react';
 import { useSelector } from 'react-redux';
+import Profile from './Profile';
+import NotificationBell from './NotificationBell';
 
-const Header = (props) => {
+const Header = ({ toggleMobileSidebar }) => {
   const { userInfo } = useSelector((state) => state.auth);
-
-  const AppBarStyled = styled(AppBar)(({ theme }) => ({
-    boxShadow: '2px',
-    background: theme.palette.background.paper,
-    justifyContent: 'center',
-    backdropFilter: 'blur(4px)',
-    [theme.breakpoints.up('lg')]: {
-      minHeight: '70px',
-    },
-  }));
-  const ToolbarStyled = styled(Toolbar)(({ theme }) => ({
-    width: '100%',
-    color: theme.palette.text.secondary,
-  }));
-
   return (
-    <AppBarStyled position="sticky" color="default">
-      <ToolbarStyled>
-        <IconButton
-          color="inherit"
-          aria-label="menu"
-          onClick={props.toggleMobileSidebar}
-          sx={{
-            display: {
-              lg: 'none',
-              xs: 'inline',
-            },
-          }}
-        >
-          <IconMenu width="20" height="20" />
-        </IconButton>
+    <AppBar
+      position="sticky"
+      color="default"
+      elevation={0}
+      sx={{
+        color: 'text.primary',
+        bgcolor: 'background.paper',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      <Toolbar
+        sx={{ gap: { xs: 0.5, sm: 1 }, minHeight: { xs: 64, lg: 76 }, px: { xs: 1, sm: 3 } }}
+      >
+        {toggleMobileSidebar && (
+          <IconButton
+            aria-label="Open navigation"
+            onClick={toggleMobileSidebar}
+            sx={{ display: { lg: 'none' } }}
+          >
+            <IconMenu size={22} />
+          </IconButton>
+        )}
 
-        <NotificationBell />
         <Box flexGrow={1} />
-        <Stack spacing={1} direction="row" alignItems="center">
-          <Typography variant="contained" color="primary">
-            Hello, {_.startCase(userInfo?.name)}
+        <ThemeToggle />
+        <NotificationBell />
+        <Stack
+          spacing={0.25}
+          sx={{ display: { xs: 'none', sm: 'flex' }, ml: 1, minWidth: 0, maxWidth: 240 }}
+        >
+          <Typography variant="subtitle1" fontWeight={600} noWrap>
+            {userInfo?.name}
           </Typography>
-          <Profile />
+          <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+            {userInfo?.role}
+          </Typography>
         </Stack>
-      </ToolbarStyled>
-    </AppBarStyled>
+        <Profile />
+      </Toolbar>
+    </AppBar>
   );
 };
-
-Header.propTypes = {
-  sx: PropTypes.object,
-};
-
 export default Header;
