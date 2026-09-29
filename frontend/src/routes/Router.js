@@ -24,6 +24,7 @@ const ReviewPage = Loadable(lazy(() => import('./../views/student/ReviewPage')))
 const Error = Loadable(lazy(() => import('../views/authentication/Error')));
 const Register = Loadable(lazy(() => import('../views/authentication/Register')));
 const Login = Loadable(lazy(() => import('../views/authentication/Login')));
+const ForgotPassword = Loadable(lazy(() => import('../views/authentication/ForgotPassword')));
 const UserAccount = Loadable(lazy(() => import('../views/authentication/UserAccount')));
 const MyTasksPage = Loadable(lazy(() => import('../views/user/MyTasksPage')));
 
@@ -86,6 +87,7 @@ const Router = createBrowserRouter(
         <Route path="404" element={<Error />} />
         <Route path="/auth/register" element={<Register />} />
         <Route path="/auth/login" element={<Login />} />
+        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       </Route>
     </>,
   ),

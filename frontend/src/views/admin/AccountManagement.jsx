@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Box,
   Table,
@@ -26,6 +27,7 @@ import { toast } from 'react-toastify';
 import PageContainer from 'src/components/container/PageContainer';
 import DashboardCard from '../../components/shared/DashboardCard';
 import axiosInstance from '../../axios';
+import ResetPasswordDialog from './ResetPasswordDialog';
 
 const AccountManagement = () => {
   const [accounts, setAccounts] = useState([]);
@@ -33,6 +35,8 @@ const AccountManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [hideDeactivated, setHideDeactivated] = useState(false);
+  const [resetAccount, setResetAccount] = useState(null);
+  const { userInfo } = useSelector((state) => state.auth);
 
   const fetchAccounts = async () => {
     try {
@@ -166,7 +170,12 @@ const AccountManagement = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                        <Button size="small" variant="outlined"
+                          disabled={account._id === userInfo?._id}
+                          onClick={() => setResetAccount(account)}>
+                          Reset password
+                        </Button>
                         <Button
                           size="small"
                           variant="outlined"
@@ -195,6 +204,17 @@ const AccountManagement = () => {
           </Table>
         </TableContainer>
       </DashboardCard>
+      {resetAccount && (
+        <ResetPasswordDialog
+          key={resetAccount._id}
+          account={resetAccount}
+          onClose={() => setResetAccount(null)}
+          onSuccess={(message) => {
+            setResetAccount(null);
+            toast.success(message);
+          }}
+        />
+      )}
     </PageContainer>
   );
 };

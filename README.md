@@ -22,7 +22,7 @@ The interface supports responsive layouts and a persistent light/dark theme.
 
 | Workspace | Capabilities |
 | --- | --- |
-| Administrator | Approve accounts, manage users and courses, assign lecturers, and view platform statistics. |
+| Administrator | Approve accounts, reset user passwords, manage users and courses, assign lecturers, and view platform statistics. |
 | Lecturer | Create and edit exams, manage questions and enrollment requests, review results and proctoring logs, and set pass/fail decisions. |
 | Student | Apply to courses, take available exams, view released results, and review answers when permitted. |
 
@@ -45,7 +45,6 @@ Proctoring flags provide context for lecturer review; they do not establish misc
 | Authentication | JWT cookies, bcrypt |
 | Proctoring | TensorFlow.js, COCO-SSD, face-api, react-webcam |
 | Image storage | Uploadcare |
-| Email notifications | Resend |
 | Frontend tooling | Create React App, Jest, React Testing Library |
 
 ## Getting started
@@ -125,7 +124,6 @@ Set these in the root `.env` file:
 | `NODE_ENV` | Use `development` locally or `production` to serve the frontend build through Express. |
 | `MONGO_URL` | MongoDB connection string. Required. |
 | `JWT_SECRET` | Secret used to sign authentication tokens. Required. |
-| `RESEND_API_KEY` | Resend API key for approval/rejection emails. Needed only when configuring email delivery. |
 
 ### Frontend API address
 
@@ -150,14 +148,15 @@ export const uploadcareClient = new UploadClient({
 
 This client is shared by question-image uploads and proctoring screenshots. The public key is intended for browser use; private Uploadcare credentials do not belong in this file.
 
-### Email notifications
+### Account notifications
 
-To enable account approval/rejection emails:
+The application does not send email. Account approvals and rejections take effect immediately; administrators communicate decisions through their institution's usual channels. No email provider or verified domain is required.
 
-1. Add `RESEND_API_KEY` to the root `.env` file.
-2. Replace the placeholder `from: "-"` in [backend/utils/sendEmail.js](backend/utils/sendEmail.js) with an authorized sender address for your Resend setup.
+### Password recovery
 
-The sender is currently configured in code, not through an environment variable. The helper is designed to keep approval/rejection actions working when email delivery fails.
+The **Forgot password?** link on the login page explains how to contact the institution's administrator. After verifying the person's identity, an administrator opens **Account Management → Reset password**, enters and confirms a new password, and confirms with their own administrator password.
+
+The password is hashed before storage, and the user's existing sessions lose API access. Roles and account approval status are preserved. Share the replacement password privately and ask the user to sign out, sign in again, and choose their own password in account settings. Avoid resetting passwords during active exams. Administrators change their own password in account settings; if the only administrator is locked out, recovery requires the database operator.
 
 ## First-time setup
 
@@ -210,8 +209,8 @@ Run these from the repository root:
 | `npm run build --prefix frontend` | Build the frontend into `frontend/build`. |
 | `npm run build` | Install frontend dependencies, then build the frontend. |
 | `npm test` | Run backend and frontend tests once. |
-| `npm run test:backend` | Run account, authentication, password, and exam-attempt regression tests. |
-| `npm run test:frontend` | Run frontend theme, dialog, and exam-navigation tests. |
+| `npm run test:backend` | Run account decisions, authentication, password reset, and exam-attempt regression tests. |
+| `npm run test:frontend` | Run theme, dialog, password recovery, and exam-navigation tests. |
 | `npm run lint` | Check frontend source with ESLint; warnings fail the check. |
 
 Backend tests use Node’s built-in test runner and mock database operations; they do not connect to your database. Frontend tests cover theme preferences, contrast, dialog sizing, exam navigation, and resume/submission behavior. These checks are not a full end-to-end test suite.
@@ -272,7 +271,6 @@ Authentication uses HTTP-only cookies configured with `Secure` and `SameSite=Non
 | Camera check fails | Allow camera access, close other applications using the webcam, and check browser permissions and the page's secure context. |
 | Images fail to upload or load | Verify the Uploadcare public key and CDN domain in the shared upload client; inspect failed upload requests. |
 | Proctoring models fail to load | Check requests to `/models` and external model resources. Ensure the model files in `frontend/public/models` are included in the frontend deployment. |
-| Approval emails are not delivered | Check the Resend API key, sender configuration, and backend logs. |
 | Theme changes do not persist | Browser storage may be blocked or cleared. The toggle still works for the current session. |
 
 When reporting an issue, include the relevant screen, steps to reproduce, expected and actual behavior, and sanitized browser/server errors. Remove credentials and student data from logs or screenshots before sharing them.

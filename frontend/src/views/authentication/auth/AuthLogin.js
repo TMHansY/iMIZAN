@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -83,13 +84,15 @@ const AuthLogin = ({ formik, title, subtitle, subtext }) => {
             <FormControlLabel control={<Checkbox defaultChecked />} label="Remember this Device" />
           </FormGroup>
           <Typography
+            component={Link}
+            to="/auth/forgot-password"
             fontWeight="500"
             sx={{
               textDecoration: 'none',
               color: 'primary.main',
             }}
           >
-            Forgot Password ?
+            Forgot password?
           </Typography>
         </Stack>
       </Stack>

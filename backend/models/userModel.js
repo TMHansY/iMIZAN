@@ -21,6 +21,7 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    sessionVersion: { type: Number, default: 0 },
     role: {
       type: String,
       enum: ['student', 'lecturer', 'admin'],

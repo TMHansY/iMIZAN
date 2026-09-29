@@ -16,6 +16,7 @@ import {
   deleteAccount,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { adminResetPassword } from '../controllers/passwordResetController.js';
 const userRoutes = express.Router();
 userRoutes.post('/', registerUser);
 userRoutes.post('/auth', authUser);
@@ -32,6 +33,7 @@ userRoutes.post('/bulk-approve', protect, bulkApproveUsers);
 userRoutes.post('/bulk-reject', protect, bulkRejectUsers);
 userRoutes.get('/accounts', protect, getAllAccounts);
 userRoutes.put('/:id/toggle-active', protect, toggleAccountActive);
+userRoutes.put('/:id/reset-password', protect, adminResetPassword);
 userRoutes.get('/admin/stats', protect, getSystemStats);
 userRoutes.delete('/:id', protect, deleteAccount);
 export default userRoutes;

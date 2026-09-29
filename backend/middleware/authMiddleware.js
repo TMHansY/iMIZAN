@@ -25,6 +25,10 @@ const protect = asyncHandler(async (req, res, next) => {
     res.status(401);
     throw new Error('Not authorized. Account no longer exists.');
   }
+  if ((decoded.sessionVersion ?? 0) !== (user.sessionVersion ?? 0)) {
+    res.status(401);
+    throw new Error('Your password has been reset. Please sign out and sign in again.');
+  }
   // Preserve access for legacy accounts without an approval field.
   if (user.isApproved === false) {
     res.status(403);
