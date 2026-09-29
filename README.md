@@ -216,6 +216,14 @@ Run these from the repository root:
 
 Backend tests use Node’s built-in test runner and mock database operations; they do not connect to your database. Frontend tests cover theme preferences, contrast, dialog sizing, exam navigation, and resume/submission behavior. These checks are not a full end-to-end test suite.
 
+### Frontend build compatibility
+
+Development and production builds use `react-app-rewired` with [frontend/config-overrides.js](frontend/config-overrides.js). The overrides treat Face API's browser bundle as an ES module and skip only the missing source map referenced by COCO-SSD 2.2.3. Other source maps and build warnings remain enabled.
+
+Before starting or building, [frontend/scripts/patch-build-tools.cjs](frontend/scripts/patch-build-tools.cjs) updates the deprecated `fs.F_OK` call in the installed CRA utility to `fs.constants.F_OK`. This runs again after a fresh dependency install. Review these compatibility fixes when upgrading the affected packages.
+
+To refresh the browser compatibility data, run `npx update-browserslist-db@latest` from `frontend`, then review the lockfile change and rebuild. Dependency security findings from `npm audit` are separate from these build warnings.
+
 ## Project structure
 
 ```text
