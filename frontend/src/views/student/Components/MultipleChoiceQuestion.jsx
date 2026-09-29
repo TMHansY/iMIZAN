@@ -1,4 +1,4 @@
-import React, { useEffect} from 'react';
+import React, { useEffect } from 'react';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -20,7 +20,6 @@ export default function MultipleChoiceQuestion({
   allowBackNavigation,
   isLastQuestion,
   submitTest,
-  saveUserTestScore,
 }) {
   useEffect(() => {
     const preventCopy = (event) => {
@@ -28,10 +27,7 @@ export default function MultipleChoiceQuestion({
     };
 
     const preventCopyShortcut = (event) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        ['c', 'x', 'a'].includes(event.key.toLowerCase())
-      ) {
+      if ((event.ctrlKey || event.metaKey) && ['c', 'x', 'a'].includes(event.key.toLowerCase())) {
         event.preventDefault();
       }
     };
@@ -58,16 +54,7 @@ export default function MultipleChoiceQuestion({
     onSelectOption(event.target.value);
   };
 
-  const checkIfCorrect = () => {
-    const correctOption = currentQuestionData.options.find((option) => option.isCorrect);
-    return correctOption && selectedOption && correctOption.id === selectedOption;
-  };
-
   const handleLinearNext = () => {
-    if (checkIfCorrect()) {
-      saveUserTestScore();
-    }
-
     if (isLastQuestion) {
       submitTest();
     } else {
@@ -130,19 +117,10 @@ export default function MultipleChoiceQuestion({
 
         {allowBackNavigation ? (
           <Stack direction="row" spacing={2} justifyContent="space-between">
-            <Button
-              variant="outlined"
-              onClick={onPrevious}
-              disabled={currentQuestionIndex === 0}
-            >
+            <Button variant="outlined" onClick={onPrevious} disabled={currentQuestionIndex === 0}>
               Previous
             </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={onNext}
-              disabled={isLastQuestion}
-            >
+            <Button variant="contained" color="primary" onClick={onNext} disabled={isLastQuestion}>
               Next Question
             </Button>
           </Stack>

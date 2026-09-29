@@ -56,11 +56,14 @@ const AddQuestionForm = () => {
     setImageUrl(null);
   };
 
-  const [createQuestion, { isLoading }] = useCreateQuestionMutation();
+  const [createQuestion] = useCreateQuestionMutation();
   const { data: examsData } = useGetExamsQuery();
-  const { data: existingQuestionsData, refetch: refetchExistingQuestions } = useGetQuestionsQuery(selectedExamId, {
-    skip: !selectedExamId,
-  });
+  const { data: existingQuestionsData, refetch: refetchExistingQuestions } = useGetQuestionsQuery(
+    selectedExamId,
+    {
+      skip: !selectedExamId,
+    },
+  );
 
   useEffect(() => {
     if (examsData && examsData.length > 0) {
@@ -81,7 +84,11 @@ const AddQuestionForm = () => {
 
   const handleAddQuestion = async () => {
     if (limitReached) {
-      swal('', `This exam already has its ${questionLimit} questions. You cannot add more.`, 'warning');
+      swal(
+        '',
+        `This exam already has its ${questionLimit} questions. You cannot add more.`,
+        'warning',
+      );
       return;
     }
 
@@ -126,7 +133,6 @@ const AddQuestionForm = () => {
         label="Select Exam"
         value={selectedExamId}
         onChange={(e) => {
-          console.log(e.target.value, 'option ID');
           setSelectedExamId(e.target.value);
         }}
         fullWidth
@@ -138,74 +144,74 @@ const AddQuestionForm = () => {
               {exam.examName}
             </MenuItem>
           ))}
-        </Select>
+      </Select>
 
-        {selectedExamId && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {totalAdded} of {questionLimit} questions added
-            </Typography>
-            {limitReached && (
-              <Alert severity="warning">
-                This exam's question limit has been reached. Select a different exam or increase the
-                limit when editing the exam.
-              </Alert>
-            )}
-          </Box>
-        )}
+      {selectedExamId && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body1" sx={{ mb: 1 }}>
+            {totalAdded} of {questionLimit} questions added
+          </Typography>
+          {limitReached && (
+            <Alert severity="warning">
+              This exam's question limit has been reached. Select a different exam or increase the
+              limit when editing the exam.
+            </Alert>
+          )}
+        </Box>
+      )}
 
-        {questions.map((questionObj, questionIndex) => (
-          <Card key={questionIndex} variant="outlined" sx={{ mb: 3, p: 2 }}>
-            <TextField
-              label={`Question ${questionIndex + 1}`}
-              value={questionObj.question}
-              fullWidth
-              multiline
-              InputProps={{
-                readOnly: true,
-              }}
-              sx={{ mb: 2 }}
-            />
-            {questionObj.imageUrl && (
-              <Box sx={{ mb: 2 }}>
-                <img
-                  src={questionObj.imageUrl}
-                  alt="Question"
-                  style={{ maxWidth: '100%', maxHeight: 200, display: 'block', borderRadius: 4 }}
-                />
-              </Box>
-            )}
-            <Stack spacing={2}>
-              {questionObj.options.map((option, optionIndex) => (
-                <Stack
-                  key={optionIndex}
-                  direction="row"
-                  alignItems="center"
-                  spacing={1}
-                  sx={{
-                    bgcolor: option.isCorrect ? 'success.light' : 'transparent',
-                    borderRadius: 1,
-                    px: 1,
+      {questions.map((questionObj, questionIndex) => (
+        <Card key={questionIndex} variant="outlined" sx={{ mb: 3, p: 2 }}>
+          <TextField
+            label={`Question ${questionIndex + 1}`}
+            value={questionObj.question}
+            fullWidth
+            multiline
+            InputProps={{
+              readOnly: true,
+            }}
+            sx={{ mb: 2 }}
+          />
+          {questionObj.imageUrl && (
+            <Box sx={{ mb: 2 }}>
+              <img
+                src={questionObj.imageUrl}
+                alt="Question"
+                style={{ maxWidth: '100%', maxHeight: 200, display: 'block', borderRadius: 4 }}
+              />
+            </Box>
+          )}
+          <Stack spacing={2}>
+            {questionObj.options.map((option, optionIndex) => (
+              <Stack
+                key={optionIndex}
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{
+                  bgcolor: option.isCorrect ? 'success.light' : 'transparent',
+                  borderRadius: 1,
+                  px: 1,
+                }}
+              >
+                <TextField
+                  label={`Option ${optionIndex + 1}`}
+                  value={option.optionText}
+                  fullWidth
+                  InputProps={{
+                    readOnly: true,
                   }}
-                >
-                  <TextField
-                    label={`Option ${optionIndex + 1}`}
-                    value={option.optionText}
-                    fullWidth
-                    InputProps={{
-                      readOnly: true,
-                    }}
-                  />
-                  <FormControlLabel
-                    control={<Radio checked={option.isCorrect} disabled />}
-                    label="Correct Answer"
-                    sx={{ whiteSpace: 'nowrap' }}
-                  />
-                </Stack>
-              ))}
-            </Stack>
-          </Card>
-        ))}
+                />
+                <FormControlLabel
+                  control={<Radio checked={option.isCorrect} disabled />}
+                  label="Correct Answer"
+                  sx={{ whiteSpace: 'nowrap' }}
+                />
+              </Stack>
+            ))}
+          </Stack>
+        </Card>
+      ))}
 
       <TextField
         label="New Question"
@@ -265,7 +271,11 @@ const AddQuestionForm = () => {
       </RadioGroup>
 
       <Stack mt={2} direction="row" spacing={2}>
-        <Button variant="outlined" onClick={handleAddQuestion} disabled={limitReached || isUploadingImage}>
+        <Button
+          variant="outlined"
+          onClick={handleAddQuestion}
+          disabled={limitReached || isUploadingImage}
+        >
           Add Question
         </Button>
       </Stack>

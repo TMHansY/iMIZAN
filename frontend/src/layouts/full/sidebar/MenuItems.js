@@ -1,12 +1,10 @@
 import {
-  IconAperture,
   IconCopy,
   IconLayoutDashboard,
   IconLogin,
   IconMoodHappy,
   IconTypography,
   IconUserPlus,
-  IconPlayerPlayFilled,
   IconShieldCheck,
   IconFlag,
 } from '@tabler/icons-react';

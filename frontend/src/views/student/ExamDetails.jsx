@@ -55,8 +55,8 @@ const buildInstructionItems = (exam) => {
     },
     {
       icon: <PreviewIcon color="action" />,
-      text: "Make sure you are decently dressed and in a well-lit environment. Any flagged moments will be screenshotted and reviewed by your lecturer.",
-    }
+      text: 'Make sure you are decently dressed and in a well-lit environment. Any flagged moments will be screenshotted and reviewed by your lecturer.',
+    },
   ];
 
   if (exam?.allowBackNavigation) {
@@ -94,7 +94,7 @@ export default function ExamDetails() {
   const navigate = useNavigate();
   const { examId } = useParams();
 
-  const { data: questions, isLoading } = useGetQuestionsQuery(examId);
+  useGetQuestionsQuery(examId);
   const { data: examsData } = useGetExamsQuery();
   const currentExam = examsData?.find((exam) => exam.examId === examId);
 
@@ -117,8 +117,12 @@ export default function ExamDetails() {
     fetchAttempts();
   }, [examId]);
 
-  const attemptsExhausted = attemptInfo && attemptInfo.attemptsRemaining <= 0;
+  const attemptsExhausted =
+    attemptInfo && attemptInfo.attemptsRemaining <= 0 && !attemptInfo.activeAttempt;
 
+  const expiredAttempt =
+    attemptInfo?.activeAttempt &&
+    new Date(attemptInfo.activeAttempt.expiresAt).getTime() <= Date.now();
   const testId = uniqueId();
   const [certify, setCertify] = useState(false);
   const handleCertifyChange = () => setCertify(!certify);
@@ -141,7 +145,7 @@ export default function ExamDetails() {
   };
 
   const handleTest = () => {
-    if (!cameraVerified) {
+    if (!cameraVerified && !expiredAttempt) {
       toast.error('Please complete the camera check before starting the test.');
       return;
     }
@@ -172,8 +176,8 @@ export default function ExamDetails() {
             {currentExam?.examName || 'Exam'}
           </Typography>
           <Typography variant="body1" color="text.secondary" mb={3}>
-            This is a proctored multiple choice exam. Your webcam will monitor your session for
-            the entire duration to help ensure academic integrity.
+            This is a proctored multiple choice exam. Your webcam will monitor your session for the
+            entire duration to help ensure academic integrity.
           </Typography>
 
           {/* Quick facts */}
@@ -209,17 +213,16 @@ export default function ExamDetails() {
           </List>
 
           <Alert severity="info" sx={{ mb: 3 }}>
-            Your actions during the exam are proctored. 
-            Signs of wrongdoing may lead to cancellation of your result.
+            Starting an exam uses an attempt. Leaving or refreshing does not reset its timer. Your
+            actions during the exam are proctored. Signs of wrongdoing may lead to cancellation of
+            your result.
           </Alert>
 
           <Divider sx={{ mb: 3 }} />
 
           {/* Confirmation & actions */}
           <FormControlLabel
-            control={
-              <Checkbox checked={certify} onChange={handleCertifyChange} color="primary" />
-            }
+            control={<Checkbox checked={certify} onChange={handleCertifyChange} color="primary" />}
             label="I have read and agree to the instructions above"
             sx={{ mb: 2 }}
           />
@@ -234,6 +237,13 @@ export default function ExamDetails() {
             </Typography>
           )}
 
+          {attemptInfo?.activeAttempt && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              {expiredAttempt
+                ? 'This attempt has expired. Submit it to record the answers saved before the deadline.'
+                : 'Your attempt is in progress. Its timer continues while you are away; resume to continue with your saved answers.'}
+            </Alert>
+          )}
           {attemptsExhausted ? (
             <Alert severity="error">
               You have used all {attemptInfo.maxAttempts} attempt
@@ -254,11 +264,15 @@ export default function ExamDetails() {
               <Button
                 variant="contained"
                 color="primary"
-                disabled={!certify || !cameraVerified || attemptLoading}
+                disabled={attemptLoading || (!expiredAttempt && (!certify || !cameraVerified))}
                 onClick={handleTest}
                 fullWidth
               >
-                Start Test
+                {expiredAttempt
+                  ? 'Submit saved attempt'
+                  : attemptInfo?.activeAttempt
+                  ? 'Resume Test'
+                  : 'Start Test'}
               </Button>
             </Stack>
           )}
@@ -271,13 +285,6 @@ export default function ExamDetails() {
         onClose={() => setCameraDialogOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{
-          sx: {
-            maxWidth: 444,
-            width: { xs: 'calc(100% - 32px)', sm: 'calc(100% - 64px)' },
-            m: { xs: 2, sm: 4 },
-          },
-        }}
       >
         <DialogTitle>Camera Check</DialogTitle>
         <DialogContent>

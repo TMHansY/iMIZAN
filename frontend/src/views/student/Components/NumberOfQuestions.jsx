@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Grid from '@mui/material/Grid';
 import Avatar from '@mui/material/Avatar';
 import { Box, Button, Stack, Typography } from '@mui/material';
-import { toast } from 'react-toastify';
 
 const NumberOfQuestions = ({
   questionLength,
@@ -13,43 +12,16 @@ const NumberOfQuestions = ({
   allowBackNavigation,
   allAnswered,
   onSubmit,
-  submitTest,
-  examDurationInSeconds,
+  timeLeft,
+  isSubmitting,
 }) => {
   const totalQuestions = questionLength;
   const questionNumbers = Array.from({ length: totalQuestions }, (_, index) => index + 1);
-
-  const [timeLeft, setTimeLeft] = useState(examDurationInSeconds * 60);
 
   const rows = [];
   for (let i = 0; i < questionNumbers.length; i += 5) {
     rows.push(questionNumbers.slice(i, i + 5));
   }
-
-  useEffect(() => {
-    setTimeLeft(examDurationInSeconds * 60);
-  }, [examDurationInSeconds]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          handleTimeUp();
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleTimeUp = () => {
-    toast.warning('Time is up! Submitting your test...');
-    submitTest();
-  };
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -80,7 +52,12 @@ const NumberOfQuestions = ({
           </Typography>
           <Typography variant="h6">Time Left: {formatTime(timeLeft)}</Typography>
           {allowBackNavigation && (
-            <Button variant="contained" color="success" onClick={onSubmit} disabled={!allAnswered}>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={onSubmit}
+              disabled={!allAnswered || isSubmitting || timeLeft === 0}
+            >
               Submit Exam
             </Button>
           )}

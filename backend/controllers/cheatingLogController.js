@@ -1,7 +1,7 @@
-import asyncHandler from "express-async-handler";
-import CheatingLog from "../models/cheatingLogModel.js";
-import Exam from "../models/examModel.js";
-import isExamOwner from "../utils/checkExamOwnership.js";
+import asyncHandler from 'express-async-handler';
+import CheatingLog from '../models/cheatingLogModel.js';
+import Exam from '../models/examModel.js';
+import isExamOwner from '../utils/checkExamOwnership.js';
 
 // @desc Save cheating log data
 // @route POST /api/cheatingLogs
@@ -18,17 +18,6 @@ const saveCheatingLog = asyncHandler(async (req, res) => {
     screenshots,
   } = req.body;
 
-  console.log("Received cheating log data:", {
-    noFaceCount,
-    multipleFaceCount,
-    cellPhoneCount,
-    tabSwitchCount,
-    examId,
-    username,
-    email,
-    screenshots,
-  });
-
   const cheatingLog = new CheatingLog({
     noFaceCount,
     multipleFaceCount,
@@ -41,13 +30,12 @@ const saveCheatingLog = asyncHandler(async (req, res) => {
   });
 
   const savedLog = await cheatingLog.save();
-  console.log("Saved cheating log:", savedLog);
 
   if (savedLog) {
     res.status(201).json(savedLog);
   } else {
     res.status(400);
-    throw new Error("Invalid Cheating Log Data");
+    throw new Error('Invalid Cheating Log Data');
   }
 });
 
@@ -60,12 +48,12 @@ const getCheatingLogsByExamId = asyncHandler(async (req, res) => {
   const exam = await Exam.findOne({ examId });
   if (!exam) {
     res.status(404);
-    throw new Error("Exam not found");
+    throw new Error('Exam not found');
   }
 
-  if (req.user.role !== "lecturer" || !isExamOwner(exam, req.user)) {
+  if (req.user.role !== 'lecturer' || !isExamOwner(exam, req.user)) {
     res.status(403);
-    throw new Error("Not authorized to view logs for this exam");
+    throw new Error('Not authorized to view logs for this exam');
   }
 
   const cheatingLogs = await CheatingLog.find({ examId });

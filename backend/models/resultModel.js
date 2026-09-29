@@ -1,14 +1,20 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const resultSchema = mongoose.Schema(
   {
+    attemptId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ExamAttempt',
+      unique: true,
+      sparse: true,
+    },
     examId: {
       type: String,
       required: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
     answers: {
@@ -49,11 +55,11 @@ const resultSchema = mongoose.Schema(
     },
     feedback: {
       type: String,
-      default: "",
+      default: '',
     },
     gradedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
     },
     gradedAt: {
       type: Date,
@@ -61,8 +67,8 @@ const resultSchema = mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const Result = mongoose.model("Result", resultSchema);
+const Result = mongoose.model('Result', resultSchema);
 export default Result;

@@ -16,9 +16,11 @@ const FACE_ISSUE_SUSTAIN_MS = 3000;
 
 export default function Home({ cheatingLog, incrementViolation }) {
   const webcamRef = useRef(null);
+  const activeRef = useRef(true);
+  const detectionTimer = useRef(null);
   const canvasRef = useRef(null);
   const [lastDetectionTime, setLastDetectionTime] = useState({});
-  const [screenshots, setScreenshots] = useState([]);
+  const [, setScreenshots] = useState([]);
 
   // Refs (not state) since these update every tick and shouldn't trigger renders.
   const faceIssueStartRef = useRef(null);
@@ -32,12 +34,7 @@ export default function Home({ cheatingLog, incrementViolation }) {
   const captureScreenshotAndUpload = async (type) => {
     const video = webcamRef.current?.video;
 
-    if (
-      !video ||
-      video.readyState !== 4 ||
-      video.videoWidth === 0 ||
-      video.videoHeight === 0
-    ) {
+    if (!video || video.readyState !== 4 || video.videoWidth === 0 || video.videoHeight === 0) {
       console.warn('Video not ready for screenshot');
       return null;
     }
@@ -84,6 +81,7 @@ export default function Home({ cheatingLog, incrementViolation }) {
       setLastDetectionTime((prev) => ({ ...prev, [type]: now }));
 
       const screenshot = await captureScreenshotAndUpload(type);
+      if (!activeRef.current) return;
       incrementViolation(type, screenshot);
 
       // Non-blocking toast — doesn't require a click, doesn't interrupt
@@ -106,8 +104,12 @@ export default function Home({ cheatingLog, incrementViolation }) {
     try {
       const cocoNet = await cocossd.load();
       await loadModels();
-      console.log('AI models loaded.');
-      setInterval(() => {
+
+      if (!activeRef.current) {
+        cocoNet.dispose();
+        return;
+      }
+      detectionTimer.current = setInterval(() => {
         detect(cocoNet).catch((err) => console.error('Detection loop error:', err));
       }, 1000);
     } catch (error) {
@@ -204,7 +206,12 @@ export default function Home({ cheatingLog, incrementViolation }) {
   };
 
   useEffect(() => {
+    activeRef.current = true;
     runDetectionLoop();
+    return () => {
+      activeRef.current = false;
+      clearInterval(detectionTimer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

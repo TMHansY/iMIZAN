@@ -7,7 +7,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Slide from '@mui/material/Slide';
-import { TransitionProps } from '@mui/material/transitions';
+
 import { useDeleteExamMutation } from 'src/slices/examApiSlice';
 import { toast } from 'react-toastify';
 
@@ -31,7 +31,7 @@ const DeleteIcon = ({ examId }) => {
 
   const handleDelete = async (e) => {
     e.stopPropagation();
-    console.log(examId);
+
     await deleteExam(examId);
     toast.success('Exam deleted successfully');
     setOpen(false);

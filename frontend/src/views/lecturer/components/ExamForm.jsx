@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Button,
-  TextField,
   FormControl,
   InputLabel,
   Select,
@@ -14,8 +13,15 @@ import {
 } from '@mui/material';
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 
-const CreateExam = ({ formik, title, subtitle, subtext, submitLabel = 'Create Exam', courses = [] }) => {
-  const { values, errors, touched, handleBlur, handleChange, handleSubmit, setFieldValue } = formik;
+const CreateExam = ({
+  formik,
+  title,
+  subtitle,
+  subtext,
+  submitLabel = 'Create Exam',
+  courses = [],
+}) => {
+  const { values, errors, touched, handleChange, handleSubmit, setFieldValue } = formik;
 
   return (
     <>

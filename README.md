@@ -189,6 +189,14 @@ A typical workflow is:
 4. The enrolled student completes the camera check and takes the exam within its availability window.
 5. The lecturer reviews results and proctoring logs, makes any required decision, and releases results.
 
+### Leaving or resuming an exam
+
+Starting an exam reserves an attempt on the server. Answers, question position, and available proctoring data are saved as progress changes. Browser Back and in-app navigation show a leave confirmation; refresh and tab-close actions use the browser's standard warning where supported.
+
+Returning resumes the same attempt with the original deadline. The timer keeps running while the student is away, and the deadline cannot extend beyond the exam's closing time. After expiry, the server rejects further answer changes and submission uses the last saved answers. If the browser was closed, the result is finalized when the student returns and submits the saved attempt; there is no background expiry worker.
+
+The new attempt flow requires matching frontend and backend versions. Deploy between exam sessions: older open clients do not carry the attempt ID required by the updated submission endpoint.
+
 ## Development commands
 
 Run these from the repository root:
@@ -201,9 +209,12 @@ Run these from the repository root:
 | `npm start` | Start the backend without automatic reload. |
 | `npm run build --prefix frontend` | Build the frontend into `frontend/build`. |
 | `npm run build` | Install frontend dependencies, then build the frontend. |
-| `npm test --prefix frontend -- --watchAll=false` | Run frontend tests once. |
+| `npm test` | Run backend and frontend tests once. |
+| `npm run test:backend` | Run account, authentication, password, and exam-attempt regression tests. |
+| `npm run test:frontend` | Run frontend theme, dialog, and exam-navigation tests. |
+| `npm run lint` | Check frontend source with ESLint; warnings fail the check. |
 
-The root `npm test` command is a placeholder and exits with an error. Use the frontend test command above. The current theme tests cover preference persistence, toggle behavior, and dark-mode contrast; they are not a full end-to-end test suite.
+Backend tests use Node’s built-in test runner and mock database operations; they do not connect to your database. Frontend tests cover theme preferences, contrast, dialog sizing, exam navigation, and resume/submission behavior. These checks are not a full end-to-end test suite.
 
 ## Project structure
 

@@ -34,11 +34,9 @@ export const CheatingLogProvider = ({ children }) => {
         noFaceCount: Number(newLog.noFaceCount || prev.noFaceCount || 0),
         multipleFaceCount: Number(newLog.multipleFaceCount || prev.multipleFaceCount || 0),
         cellPhoneCount: Number(newLog.cellPhoneCount || prev.cellPhoneCount || 0),
-        tabSwitchCount: Number(
-          newLog.tabSwitchCount || prev.tabSwitchCount || 0,
-        ),
+        tabSwitchCount: Number(newLog.tabSwitchCount || prev.tabSwitchCount || 0),
       };
-      console.log('Updated cheating log:', updatedLog);
+
       return updatedLog;
     });
   };
@@ -47,9 +45,7 @@ export const CheatingLogProvider = ({ children }) => {
     setCheatingLog((prev) => ({
       ...prev,
       [`${type}Count`]: (prev[`${type}Count`] || 0) + 1,
-      screenshots: screenshot
-        ? [...(prev.screenshots || []), screenshot]
-        : (prev.screenshots || []),
+      screenshots: screenshot ? [...(prev.screenshots || []), screenshot] : prev.screenshots || [],
     }));
   };
 
@@ -63,12 +59,14 @@ export const CheatingLogProvider = ({ children }) => {
       username: userInfo?.name || '',
       email: userInfo?.email || '',
     };
-    console.log('Reset cheating log:', resetLog);
+
     setCheatingLog(resetLog);
   };
-  
+
   return (
-    <CheatingLogContext.Provider value={{ cheatingLog, updateCheatingLog, resetCheatingLog, incrementViolation }}>
+    <CheatingLogContext.Provider
+      value={{ cheatingLog, updateCheatingLog, resetCheatingLog, incrementViolation }}
+    >
       {children}
     </CheatingLogContext.Provider>
   );

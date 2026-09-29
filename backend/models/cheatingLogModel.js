@@ -1,7 +1,13 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const cheatingLogSchema = new mongoose.Schema(
   {
+    attemptId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ExamAttempt',
+      unique: true,
+      sparse: true,
+    },
     noFaceCount: { type: Number, default: 0 },
     multipleFaceCount: { type: Number, default: 0 },
     cellPhoneCount: { type: Number, default: 0 },
@@ -16,7 +22,7 @@ const cheatingLogSchema = new mongoose.Schema(
         url: { type: String, required: true },
         type: {
           type: String,
-          enum: ["noFace", "multipleFace", "cellPhone", "tabSwitch"],
+          enum: ['noFace', 'multipleFace', 'cellPhone', 'tabSwitch'],
           required: true,
         },
         detectedAt: { type: Date, default: Date.now },
@@ -25,9 +31,9 @@ const cheatingLogSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-const CheatingLog = mongoose.model("CheatingLog", cheatingLogSchema);
+const CheatingLog = mongoose.model('CheatingLog', cheatingLogSchema);
 
 export default CheatingLog;

@@ -4,7 +4,6 @@ import PageContainer from 'src/components/container/PageContainer';
 import ExamForm from './components/ExamForm';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
-import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { useCreateExamMutation } from '../../slices/examApiSlice.js';
 import { useEffect, useState } from 'react';
@@ -36,8 +35,7 @@ const examValidationSchema = yup.object({
 });
 
 const CreateExamPage = () => {
-  const { userInfo } = useSelector((state) => state.auth);
-  const [createExam, { isLoading }] = useCreateExamMutation();
+  const [createExam] = useCreateExamMutation();
   const [courses, setCourses] = useState([]);
 
   useEffect(() => {

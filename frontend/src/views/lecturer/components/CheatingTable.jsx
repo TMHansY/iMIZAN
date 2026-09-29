@@ -232,19 +232,7 @@ export default function CheatingTable() {
       )}
 
       {/* Screenshots Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            maxWidth: (theme) => theme.breakpoints.values.md,
-            width: { xs: 'calc(100% - 32px)', sm: 'calc(100% - 64px)' },
-            m: { xs: 2, sm: 4 },
-          },
-        }}
-      >
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">Screenshots - {selectedLog?.username}</Typography>
@@ -257,7 +245,9 @@ export default function CheatingTable() {
           <Grid container spacing={2}>
             {selectedLog?.screenshots?.map((screenshot, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card sx={{ border: 0, borderRadius: '4px', boxShadow: (theme) => theme.shadows[1] }}>
+                <Card
+                  sx={{ border: 0, borderRadius: '4px', boxShadow: (theme) => theme.shadows[1] }}
+                >
                   <CardMedia
                     component="img"
                     image={screenshot.url}

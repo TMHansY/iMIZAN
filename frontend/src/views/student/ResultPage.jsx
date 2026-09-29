@@ -127,7 +127,9 @@ const ResultPage = () => {
         { withCredentials: true },
       );
       toast.success(
-        `${showToStudent ? 'Shown' : 'Hidden'} results for ${response.data.data.modifiedCount} student(s)`,
+        `${showToStudent ? 'Shown' : 'Hidden'} results for ${
+          response.data.data.modifiedCount
+        } student(s)`,
       );
       await refreshResults();
     } catch (err) {
@@ -158,7 +160,11 @@ const ResultPage = () => {
         return closest;
       }, null);
 
-      setReviewLog(closestLog?.log || null);
+      setReviewLog(
+        result.attemptId
+          ? studentLogs.find((log) => log.attemptId === result.attemptId) || null
+          : closestLog?.log || null,
+      );
     } catch (err) {
       toast.error('Failed to load cheating log for this student');
     } finally {
@@ -375,7 +381,11 @@ const ResultPage = () => {
                         <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           {exams.find((e) => e.examId === result.examId)?.allowReview && (
-                            <Button size="small" variant="outlined" onClick={() => navigate(`/review/${result._id}`)}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => navigate(`/review/${result._id}`)}
+                            >
                               Review
                             </Button>
                           )}
@@ -501,7 +511,8 @@ const ResultPage = () => {
                   {groupedResults.map((group) => {
                     const isExpanded = expandedGroups.has(group.key);
                     const examName =
-                      exams.find((e) => e.examId === group.latest.examId)?.examName || 'Unknown Exam';
+                      exams.find((e) => e.examId === group.latest.examId)?.examName ||
+                      'Unknown Exam';
 
                     const renderActionCells = (result) => (
                       <>
@@ -575,7 +586,9 @@ const ResultPage = () => {
                               </Typography>
                             )}
                           </TableCell>
-                          <TableCell>{new Date(group.latest.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            {new Date(group.latest.createdAt).toLocaleDateString()}
+                          </TableCell>
                           <TableCell>{renderActionCells(group.latest)}</TableCell>
                         </TableRow>
 
@@ -606,7 +619,9 @@ const ResultPage = () => {
                               <TableCell>
                                 <StatusChip result={attempt} />
                               </TableCell>
-                              <TableCell>{new Date(attempt.createdAt).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                {new Date(attempt.createdAt).toLocaleDateString()}
+                              </TableCell>
                               <TableCell>{renderActionCells(attempt)}</TableCell>
                             </TableRow>
                           ))}
@@ -621,19 +636,7 @@ const ResultPage = () => {
       </Grid>
 
       {/* Review & Decide Dialog */}
-      <Dialog
-        open={reviewDialogOpen}
-        onClose={handleCloseReview}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            maxWidth: (theme) => theme.breakpoints.values.sm,
-            width: { xs: 'calc(100% - 32px)', sm: 'calc(100% - 64px)' },
-            m: { xs: 2, sm: 4 },
-          },
-        }}
-      >
+      <Dialog open={reviewDialogOpen} onClose={handleCloseReview} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">
@@ -677,7 +680,13 @@ const ResultPage = () => {
                           <img
                             src={s.url}
                             alt={s.type}
-                            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain', borderRadius: 4 }}
+                            style={{
+                              width: '100%',
+                              height: 'auto',
+                              display: 'block',
+                              objectFit: 'contain',
+                              borderRadius: 4,
+                            }}
                           />
                           <Typography variant="caption" display="block" textAlign="center">
                             {s.type}

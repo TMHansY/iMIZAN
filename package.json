@@ -1,15 +1,18 @@
 {
-  "name": "0_authentication_jwt",
+  "name": "imizan",
   "version": "1.0.0",
-  "description": "JWT Authentication, Redux Toolkit, bcrypt setup",
-  "main": "index.js",
+  "description": "Online examination platform with course management, proctoring, and lecturer review.",
+  "main": "backend/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run test:backend && npm run test:frontend",
     "server": "nodemon backend/server.js",
     "client": "npm start --prefix frontend",
     "dev": "concurrently \" npm run server \" \" npm run client \"",
     "start": "node backend/server.js",
-    "build": "npm install --prefix frontend && npm run build --prefix frontend"
+    "build": "npm install --prefix frontend && npm run build --prefix frontend",
+    "lint": "npm run lint --prefix frontend",
+    "test:backend": "node --test backend/tests/*.test.js",
+    "test:frontend": "npm test --prefix frontend -- --watchAll=false"
   },
   "type": "module",
   "author": "",

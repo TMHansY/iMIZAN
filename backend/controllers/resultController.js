@@ -1,10 +1,12 @@
-import asyncHandler from "express-async-handler";
-import Result from "../models/resultModel.js";
-import Question from "../models/quesModel.js";
-import Exam from "../models/examModel.js";
-import User from "../models/userModel.js";
-import CheatingLog from "../models/cheatingLogModel.js";
-import isExamOwner from "../utils/checkExamOwnership.js";
+import ExamAttempt from '../models/examAttemptModel.js';
+import { countUsedAttempts } from './examAttemptController.js';
+import asyncHandler from 'express-async-handler';
+import Result from '../models/resultModel.js';
+import Question from '../models/quesModel.js';
+import Exam from '../models/examModel.js';
+import User from '../models/userModel.js';
+import CheatingLog from '../models/cheatingLogModel.js';
+import isExamOwner from '../utils/checkExamOwnership.js';
 
 const PASS_THRESHOLD_PERCENTAGE = 50;
 
@@ -20,7 +22,9 @@ const attachAttemptNumbers = (results) => {
   const grouped = {};
   results.forEach((r) => {
     const userIdStr =
-      typeof r.userId === 'object' && r.userId !== null ? r.userId._id.toString() : String(r.userId);
+      typeof r.userId === 'object' && r.userId !== null
+        ? r.userId._id.toString()
+        : String(r.userId);
     const key = `${r.examId}_${userIdStr}`;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(r);
@@ -46,18 +50,23 @@ const getAttemptCount = asyncHandler(async (req, res) => {
   const exam = await Exam.findOne({ examId });
   if (!exam) {
     res.status(404);
-    throw new Error("Exam not found");
+    throw new Error('Exam not found');
   }
 
-  const attemptsUsed = await Result.countDocuments({
+  const attemptsUsed = await countUsedAttempts(examId, req.user._id);
+  const activeAttempt = await ExamAttempt.findOne({
     examId,
     userId: req.user._id,
+    status: 'active',
   });
 
   res.status(200).json({
     success: true,
     data: {
       attemptsUsed,
+      activeAttempt: activeAttempt
+        ? { id: activeAttempt._id, expiresAt: activeAttempt.expiresAt }
+        : null,
       maxAttempts: exam.maxAttempts,
       attemptsRemaining: Math.max(exam.maxAttempts - attemptsUsed, 0),
     },
@@ -68,30 +77,50 @@ const getAttemptCount = asyncHandler(async (req, res) => {
 // @route   POST /api/results
 // @access  Private
 const saveResult = asyncHandler(async (req, res) => {
-  const { examId, answers, timeTakenSeconds } = req.body;
-
-  if (!examId || !answers) {
+  const { examId, attemptId } = req.body;
+  if (!examId || !attemptId) {
     res.status(400);
-    throw new Error("Please provide examId and answers");
+    throw new Error('An active exam attempt is required. Open the exam from its details page.');
   }
-
   const exam = await Exam.findOne({ examId });
   if (!exam) {
     res.status(404);
-    throw new Error("Exam not found");
+    throw new Error('Exam not found.');
   }
-
-  const attemptsUsed = await Result.countDocuments({
-    examId,
-    userId: req.user._id,
-  });
-
-  if (attemptsUsed >= exam.maxAttempts) {
-    res.status(403);
-    throw new Error(
-      `You have reached the maximum number of attempts (${exam.maxAttempts}) for this exam.`
-    );
+  const now = new Date();
+  // Freeze the last server-saved progress. Retrying submission cannot alter it.
+  let attempt = await ExamAttempt.findOneAndUpdate(
+    {
+      _id: attemptId,
+      examId,
+      userId: req.user._id,
+      status: 'active',
+      finishedAt: { $exists: false },
+    },
+    { $set: { finishedAt: now } },
+    { new: true },
+  );
+  if (!attempt)
+    attempt = await ExamAttempt.findOne({
+      _id: attemptId,
+      examId,
+      userId: req.user._id,
+      finishedAt: { $exists: true },
+    });
+  if (!attempt) {
+    res.status(404);
+    throw new Error('Exam attempt not found.');
   }
+  const answers =
+    attempt.answers instanceof Map ? Object.fromEntries(attempt.answers) : attempt.answers;
+  const timeTakenSeconds = Math.max(
+    0,
+    Math.round(
+      (Math.min(new Date(attempt.finishedAt), new Date(attempt.expiresAt)) -
+        new Date(attempt.startedAt)) /
+        1000,
+    ),
+  );
 
   // Get all questions for this exam to calculate marks
   const questions = await Question.find({ examId });
@@ -113,18 +142,40 @@ const saveResult = asyncHandler(async (req, res) => {
 
   // Calculate percentage
   const totalQuestions = questions.length;
-  const percentage =
-    totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+  const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
 
-  const result = await Result.create({
-    examId,
-    userId: req.user._id,
-    answers: new Map(Object.entries(answers)),
-    totalMarks,
-    percentage,
-    timeTakenSeconds,
-    showToStudent: false, // Default to false, lecturer can change this
-  });
+  await Promise.all([Result.init(), CheatingLog.init()]);
+  const result = await Result.findOneAndUpdate(
+    { attemptId: attempt._id },
+    {
+      $setOnInsert: {
+        attemptId: attempt._id,
+        examId,
+        userId: req.user._id,
+        answers,
+        totalMarks,
+        percentage,
+        timeTakenSeconds,
+        showToStudent: false,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
+  await CheatingLog.findOneAndUpdate(
+    { attemptId: attempt._id },
+    {
+      $setOnInsert: {
+        ...attempt.proctoringLog,
+        attemptId: attempt._id,
+        examId,
+        username: req.user.name,
+        email: req.user.email,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
+
+  await ExamAttempt.updateOne({ _id: attempt._id }, { $set: { status: 'submitted' } });
 
   res.status(201).json({
     success: true,
@@ -141,16 +192,16 @@ const getResultsByExamId = asyncHandler(async (req, res) => {
   const exam = await Exam.findOne({ examId });
   if (!exam) {
     res.status(404);
-    throw new Error("Exam not found");
+    throw new Error('Exam not found');
   }
 
   if (!isExamOwner(exam, req.user)) {
     res.status(403);
-    throw new Error("Not authorized to view results for this exam");
+    throw new Error('Not authorized to view results for this exam');
   }
 
   const results = await Result.find({ examId })
-    .populate("userId", "name email")
+    .populate('userId', 'name email')
     .sort({ createdAt: -1 });
   res.status(200).json({
     success: true,
@@ -184,7 +235,7 @@ const getResultById = asyncHandler(async (req, res) => {
 
   if (!result) {
     res.status(404);
-    throw new Error("Result not found");
+    throw new Error('Result not found');
   }
 
   const isOwner = result.userId.toString() === req.user._id.toString();
@@ -194,7 +245,7 @@ const getResultById = asyncHandler(async (req, res) => {
 
   if (!isOwner && !isLecturerOwner) {
     res.status(403);
-    throw new Error("Not authorized to view this result");
+    throw new Error('Not authorized to view this result');
   }
 
   res.status(200).json({
@@ -212,13 +263,13 @@ const toggleResultVisibility = asyncHandler(async (req, res) => {
   const result = await Result.findById(resultId);
   if (!result) {
     res.status(404);
-    throw new Error("Result not found");
+    throw new Error('Result not found');
   }
 
   const exam = await Exam.findOne({ examId: result.examId });
   if (!isExamOwner(exam, req.user)) {
     res.status(403);
-    throw new Error("Not authorized to modify this result");
+    throw new Error('Not authorized to modify this result');
   }
 
   result.showToStudent = !result.showToStudent;
@@ -234,18 +285,18 @@ const toggleResultVisibility = asyncHandler(async (req, res) => {
 // @route   GET /api/results/all
 // @access  Private (Lecturer only)
 const getAllResults = asyncHandler(async (req, res) => {
-  if (req.user.role !== "lecturer") {
+  if (req.user.role !== 'lecturer') {
     res.status(403);
-    throw new Error("Not authorized to view all results");
+    throw new Error('Not authorized to view all results');
   }
 
   const ownedExams = await Exam.find({
     $or: [{ createdBy: req.user._id }, { createdBy: { $exists: false } }],
-  }).select("examId");
+  }).select('examId');
   const ownedExamIds = ownedExams.map((e) => e.examId);
 
   const results = await Result.find({ examId: { $in: ownedExamIds } })
-    .populate("userId", "name email")
+    .populate('userId', 'name email')
     .sort({ createdAt: -1 });
   res.status(200).json({
     success: true,
@@ -260,12 +311,12 @@ const setResultDecision = asyncHandler(async (req, res) => {
   const { resultId } = req.params;
   const { decision } = req.body; // 'pass', 'fail', or null to reset to automatic
 
-  if (req.user.role !== "lecturer") {
+  if (req.user.role !== 'lecturer') {
     res.status(403);
-    throw new Error("Not authorized to set result decisions");
+    throw new Error('Not authorized to set result decisions');
   }
 
-  if (decision !== "pass" && decision !== "fail" && decision !== null) {
+  if (decision !== 'pass' && decision !== 'fail' && decision !== null) {
     res.status(400);
     throw new Error("Decision must be 'pass', 'fail', or null");
   }
@@ -273,13 +324,13 @@ const setResultDecision = asyncHandler(async (req, res) => {
   const result = await Result.findById(resultId);
   if (!result) {
     res.status(404);
-    throw new Error("Result not found");
+    throw new Error('Result not found');
   }
 
   const exam = await Exam.findOne({ examId: result.examId });
   if (!isExamOwner(exam, req.user)) {
     res.status(403);
-    throw new Error("Not authorized to set decisions for this result");
+    throw new Error('Not authorized to set decisions for this result');
   }
 
   result.lecturerDecision = decision;
@@ -298,24 +349,24 @@ const setExamResultsVisibility = asyncHandler(async (req, res) => {
   const { examId } = req.params;
   const { showToStudent } = req.body;
 
-  if (req.user.role !== "lecturer") {
+  if (req.user.role !== 'lecturer') {
     res.status(403);
-    throw new Error("Not authorized to change result visibility");
+    throw new Error('Not authorized to change result visibility');
   }
 
   const exam = await Exam.findOne({ examId });
   if (!exam) {
     res.status(404);
-    throw new Error("Exam not found");
+    throw new Error('Exam not found');
   }
   if (!isExamOwner(exam, req.user)) {
     res.status(403);
-    throw new Error("Not authorized to change results for this exam");
+    throw new Error('Not authorized to change results for this exam');
   }
 
-  if (typeof showToStudent !== "boolean") {
+  if (typeof showToStudent !== 'boolean') {
     res.status(400);
-    throw new Error("showToStudent must be true or false");
+    throw new Error('showToStudent must be true or false');
   }
 
   const updateResult = await Result.updateMany({ examId }, { showToStudent });
@@ -358,19 +409,19 @@ const getMyExamStatus = asyncHandler(async (req, res) => {
 // @route   GET /api/users/results/pending-review
 // @access  Private (Lecturer only)
 const getPendingReviewSummary = asyncHandler(async (req, res) => {
-  if (req.user.role !== "lecturer") {
+  if (req.user.role !== 'lecturer') {
     res.status(403);
-    throw new Error("Not authorized");
+    throw new Error('Not authorized');
   }
 
   const ownedExams = await Exam.find({
     $or: [{ createdBy: req.user._id }, { createdBy: { $exists: false } }],
-  }).select("examId");
+  }).select('examId');
   const ownedExamIds = ownedExams.map((e) => e.examId);
 
   const pendingResults = await Result.aggregate([
     { $match: { lecturerDecision: null, examId: { $in: ownedExamIds } } },
-    { $group: { _id: "$examId", count: { $sum: 1 } } },
+    { $group: { _id: '$examId', count: { $sum: 1 } } },
   ]);
 
   res.status(200).json({
@@ -384,28 +435,30 @@ const getPendingReviewSummary = asyncHandler(async (req, res) => {
 const deleteResult = asyncHandler(async (req, res) => {
   const { resultId } = req.params;
 
-  if (req.user.role !== "lecturer") {
+  if (req.user.role !== 'lecturer') {
     res.status(403);
-    throw new Error("Not authorized to delete results");
+    throw new Error('Not authorized to delete results');
   }
 
   const result = await Result.findById(resultId);
   if (!result) {
     res.status(404);
-    throw new Error("Result not found");
+    throw new Error('Result not found');
   }
 
   const exam = await Exam.findOne({ examId: result.examId });
   if (!isExamOwner(exam, req.user)) {
     res.status(403);
-    throw new Error("Not authorized to delete this result");
+    throw new Error('Not authorized to delete this result');
   }
 
-  // Find and remove the matching cheating log for this specific attempt,
-  // using the same "closest timestamp" heuristic the review dialog uses to
-  // pair a result with its log (they aren't directly linked in the schema).
+  // New results have an explicit attempt link; legacy results use the
+  // closest log timestamp as a fallback.
   const student = await User.findById(result.userId);
-  if (student) {
+  if (result.attemptId) {
+    await CheatingLog.deleteOne({ attemptId: result.attemptId });
+    await ExamAttempt.deleteOne({ _id: result.attemptId });
+  } else if (student) {
     const candidateLogs = await CheatingLog.find({
       examId: result.examId,
       email: student.email,
@@ -429,7 +482,7 @@ const deleteResult = asyncHandler(async (req, res) => {
 
   await Result.deleteOne({ _id: resultId });
 
-  res.status(200).json({ message: "Attempt and its proctoring log deleted." });
+  res.status(200).json({ message: 'Attempt and its proctoring log deleted.' });
 });
 
 export {

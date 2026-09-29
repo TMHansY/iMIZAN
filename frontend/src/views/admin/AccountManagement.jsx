@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box,
-  Typography,
   Table,
   TableBody,
   TableCell,
@@ -117,11 +116,7 @@ const AccountManagement = () => {
           />
           <FormControl sx={{ minWidth: 160 }}>
             <InputLabel>Role</InputLabel>
-            <Select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              label="Role"
-            >
+            <Select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} label="Role">
               <MenuItem value="all">All Roles</MenuItem>
               <MenuItem value="student">Student</MenuItem>
               <MenuItem value="lecturer">Lecturer</MenuItem>

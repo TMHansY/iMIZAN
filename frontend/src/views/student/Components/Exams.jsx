@@ -7,7 +7,6 @@ import { useGetExamsQuery } from 'src/slices/examApiSlice';
 
 const Exams = () => {
   const { data: userExams, isLoading, isError } = useGetExamsQuery();
-  console.log('Exam USer ', userExams);
 
   if (isLoading) {
     return <ContentSkeleton />;

@@ -48,7 +48,7 @@ const EditExamPage = () => {
   const { examId } = useParams();
   const navigate = useNavigate();
   const { data: examsData, isLoading } = useGetExamsQuery();
-  const [updateExam, { isLoading: isUpdating }] = useUpdateExamMutation();
+  const [updateExam] = useUpdateExamMutation();
   const [courses, setCourses] = useState([]);
 
   const currentExam = examsData?.find((exam) => exam.examId === examId);

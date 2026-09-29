@@ -154,7 +154,17 @@ export const createAppTheme = (mode = 'light') => {
         },
       },
       MuiDialog: {
-        styleOverrides: { paper: { borderRadius: 16, margin: 16, maxWidth: 'calc(100% - 32px)' } },
+        styleOverrides: {
+          paper: ({ theme }) => ({
+            borderRadius: 16,
+            margin: 16,
+            [theme.breakpoints.up('sm')]: { margin: 32 },
+          }),
+          paperFullWidth: ({ theme }) => ({
+            width: 'calc(100% - 32px)',
+            [theme.breakpoints.up('sm')]: { width: 'calc(100% - 64px)' },
+          }),
+        },
       },
       MuiListItemButton: {
         styleOverrides: {

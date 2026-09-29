@@ -1,53 +1,62 @@
+import useExamAttempt from '../../hooks/useExamAttempt';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Grid, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Grid,
+  CircularProgress,
+  Alert,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from '@mui/material';
 import PageContainer from 'src/components/container/PageContainer';
 import BlankCard from 'src/components/shared/BlankCard';
 import MultipleChoiceQuestion from './Components/MultipleChoiceQuestion';
 import NumberOfQuestions from './Components/NumberOfQuestions';
 import WebCam from './Components/WebCam';
 import { useGetExamsQuery, useGetQuestionsQuery } from '../../slices/examApiSlice';
-import { useSaveCheatingLogMutation } from 'src/slices/cheatingLogApiSlice';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
-import { useCheatingLog } from 'src/context/CheatingLogContext';
-import axiosInstance from '../../axios';
 import { seededShuffle } from '../../utils/seededShuffle';
 
 const TestPage = () => {
-  const { examId, testId } = useParams();
-  const [examStartTime] = useState(() => Date.now());
-
-  // Every new attempt starts with a clean proctoring log — otherwise flags
-  // from a previous attempt (in this same browser session) would carry over.
-  useEffect(() => {
-    resetCheatingLog(examId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [examId]);
-  const [selectedExam, setSelectedExam] = useState(null);
-  const [examDurationInSeconds, setExamDurationInSeconds] = useState(0);
+  const { examId } = useParams();
+  const session = useExamAttempt(examId);
+  const { answers, currentQuestionIndex, proctoringLog: cheatingLog } = session.progress;
   const { data: userExamdata, isLoading: isExamsLoading } = useGetExamsQuery();
   const { userInfo } = useSelector((state) => state.auth);
-  const { cheatingLog, incrementViolation, resetCheatingLog } = useCheatingLog();
-  const [saveCheatingLogMutation] = useSaveCheatingLogMutation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const selectedExam = userExamdata?.find((exam) => exam.examId === examId);
   const [questions, setQuestions] = useState([]);
   const { data, isLoading } = useGetQuestionsQuery(examId);
-  const [score, setScore] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const handleTestSubmission = session.submit;
+  const setCurrentQuestionIndex = (change) =>
+    session.update((prev) => ({
+      ...prev,
+      currentQuestionIndex:
+        typeof change === 'function' ? change(prev.currentQuestionIndex) : change,
+    }));
+  const incrementViolation = (type, screenshot) =>
+    session.update((prev) => ({
+      ...prev,
+      proctoringLog: {
+        ...prev.proctoringLog,
+        [`${type}Count`]: (prev.proctoringLog[`${type}Count`] || 0) + 1,
+        screenshots: screenshot
+          ? [...(prev.proctoringLog.screenshots || []), screenshot]
+          : prev.proctoringLog.screenshots || [],
+      },
+    }));
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (userExamdata) {
-      const exam = userExamdata.find((exam) => exam.examId === examId);
-      if (exam) {
-        setSelectedExam(exam);
-        setExamDurationInSeconds(exam.duration);
-      }
+    if (session.submitted) {
+      toast.success('Test submitted successfully!');
+      navigate('/Success', { replace: true });
     }
-  }, [userExamdata, examId]);
+  }, [session.submitted, navigate]);
 
   useEffect(() => {
     if (data && userInfo?._id) {
@@ -69,13 +78,12 @@ const TestPage = () => {
   }, [data, selectedExam, userInfo, examId]);
 
   const recordAnswer = (questionId, optionId) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+    session.update((prev) => ({ ...prev, answers: { ...prev.answers, [questionId]: optionId } }));
   };
 
   const allowBackNavigation = Boolean(selectedExam?.allowBackNavigation);
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
-  const allAnswered =
-    questions.length > 0 && questions.every((q) => Boolean(answers[q._id]));
+  const allAnswered = questions.length > 0 && questions.every((q) => Boolean(answers[q._id]));
 
   const goToNext = () => {
     if (currentQuestionIndex < questions.length - 1) {
@@ -95,53 +103,7 @@ const TestPage = () => {
     }
   };
 
-  const handleTestSubmission = async () => {
-    if (isSubmitting) return;
-
-    try {
-      setIsSubmitting(true);
-
-      const timeTakenSeconds = Math.round((Date.now() - examStartTime) / 1000);
-
-      await axiosInstance.post(
-        '/api/users/results',
-        { examId, answers, timeTakenSeconds },
-        { withCredentials: true },
-      );
-
-      const updatedLog = {
-        ...cheatingLog,
-        username: userInfo.name,
-        email: userInfo.email,
-        examId: examId,
-        noFaceCount: parseInt(cheatingLog.noFaceCount) || 0,
-        multipleFaceCount: parseInt(cheatingLog.multipleFaceCount) || 0,
-        cellPhoneCount: parseInt(cheatingLog.cellPhoneCount) || 0,
-        tabSwitchCount: parseInt(cheatingLog.tabSwitchCount) || 0,
-      };
-
-      await saveCheatingLogMutation(updatedLog).unwrap();
-
-      toast.success('Test submitted successfully!');
-      navigate('/Success');
-    } catch (error) {
-      console.error('Error submitting test:', error);
-      toast.error(
-        error?.response?.data?.message ||
-          error?.data?.message ||
-          error?.message ||
-          'Failed to submit test. Please try again.',
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const saveUserTestScore = () => {
-    setScore(score + 1);
-  };
-
-  if (isExamsLoading) {
+  if (isExamsLoading || session.loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <CircularProgress />
@@ -149,8 +111,50 @@ const TestPage = () => {
     );
   }
 
+  if (!session.attempt)
+    return <Alert severity="error">{session.error || 'Unable to start the exam.'}</Alert>;
+
   return (
     <PageContainer title="TestPage" description="This is TestPage">
+      {session.error && (
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" onClick={handleTestSubmission} disabled={session.isSubmitting}>
+              Retry submission
+            </Button>
+          }
+        >
+          {session.error}
+        </Alert>
+      )}
+      <Dialog
+        open={session.blocker.state === 'blocked'}
+        onClose={() => {
+          if (!session.isLeaving) session.blocker.reset?.();
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Leave this exam?</DialogTitle>
+        <DialogContent>
+          Your attempt has already started. The timer continues while you are away. Return to this
+          exam to resume your saved progress; leaving does not give you a new attempt or more time.
+          {session.error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {session.error}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => session.blocker.reset?.()} disabled={session.isLeaving}>
+            Stay in exam
+          </Button>
+          <Button onClick={session.leave} disabled={session.isSubmitting || session.isLeaving}>
+            {session.isLeaving ? 'Saving…' : 'Save and leave'}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Box pt="3rem">
         <Grid container spacing={3}>
           <Grid item xs={12} md={7} lg={7}>
@@ -167,20 +171,27 @@ const TestPage = () => {
                 {isLoading ? (
                   <CircularProgress />
                 ) : (
-                  <MultipleChoiceQuestion
-                    questions={questions}
-                    currentQuestionIndex={currentQuestionIndex}
-                    selectedOption={answers[questions[currentQuestionIndex]?._id] || null}
-                    onSelectOption={(optionId) =>
-                      recordAnswer(questions[currentQuestionIndex]._id, optionId)
+                  <Box
+                    component="fieldset"
+                    disabled={
+                      session.isSubmitting || session.isFinalizing || session.timeLeft === 0
                     }
-                    onNext={goToNext}
-                    onPrevious={goToPrevious}
-                    allowBackNavigation={allowBackNavigation}
-                    isLastQuestion={isLastQuestion}
-                    submitTest={handleTestSubmission}
-                    saveUserTestScore={saveUserTestScore}
-                  />
+                    sx={{ border: 0, m: 0, p: 0, width: '100%', minWidth: 0 }}
+                  >
+                    <MultipleChoiceQuestion
+                      questions={questions}
+                      currentQuestionIndex={currentQuestionIndex}
+                      selectedOption={answers[questions[currentQuestionIndex]?._id] || null}
+                      onSelectOption={(optionId) =>
+                        recordAnswer(questions[currentQuestionIndex]._id, optionId)
+                      }
+                      onNext={goToNext}
+                      onPrevious={goToPrevious}
+                      allowBackNavigation={allowBackNavigation}
+                      isLastQuestion={isLastQuestion}
+                      submitTest={handleTestSubmission}
+                    />
+                  </Box>
                 )}
               </Box>
             </BlankCard>
@@ -209,8 +220,8 @@ const TestPage = () => {
                       allowBackNavigation={allowBackNavigation}
                       allAnswered={allAnswered}
                       onSubmit={handleTestSubmission}
-                      submitTest={handleTestSubmission}
-                      examDurationInSeconds={examDurationInSeconds}
+                      timeLeft={session.timeLeft}
+                      isSubmitting={session.isSubmitting}
                     />
                   </Box>
                 </BlankCard>
