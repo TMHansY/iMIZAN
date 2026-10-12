@@ -1,3 +1,4 @@
+import { finalizeProctoringLog } from '../utils/examAttemptProgress.js';
 import ExamAttempt from '../models/examAttemptModel.js';
 import { countUsedAttempts } from './examAttemptController.js';
 import asyncHandler from 'express-async-handler';
@@ -165,7 +166,10 @@ const saveResult = asyncHandler(async (req, res) => {
     { attemptId: attempt._id },
     {
       $setOnInsert: {
-        ...attempt.proctoringLog,
+        ...finalizeProctoringLog(
+          attempt.proctoringLog,
+          Math.min(new Date(attempt.finishedAt), new Date(attempt.expiresAt)),
+        ),
         attemptId: attempt._id,
         examId,
         username: req.user.name,

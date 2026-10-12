@@ -1,3 +1,4 @@
+import { formatTabInactivityDuration } from '../../utils/tabInactivity';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -677,20 +678,31 @@ const ResultPage = () => {
                     <Grid container spacing={1}>
                       {reviewLog.screenshots.map((s, i) => (
                         <Grid item xs={12} sm={4} key={i}>
-                          <img
-                            src={s.url}
-                            alt={s.type}
-                            style={{
-                              width: '100%',
-                              height: 'auto',
-                              display: 'block',
-                              objectFit: 'contain',
-                              borderRadius: 4,
-                            }}
-                          />
+                          {s.url ? (
+                            <img
+                              src={s.url}
+                              alt={s.type}
+                              style={{
+                                width: '100%',
+                                height: 'auto',
+                                display: 'block',
+                                objectFit: 'contain',
+                                borderRadius: 4,
+                              }}
+                            />
+                          ) : (
+                            <Typography>Screenshot unavailable</Typography>
+                          )}
                           <Typography variant="caption" display="block" textAlign="center">
-                            {s.type}
+                            {s.type === 'tabSwitch' ? 'Tab Inactivity' : s.type}
                           </Typography>
+                          {s.type === 'tabSwitch' && (
+                            <Typography variant="caption" display="block" textAlign="center">
+                              Detected: {new Date(s.detectedAt).toLocaleString()}
+                              <br />
+                              Time inactive: {formatTabInactivityDuration(s.durationSeconds)}
+                            </Typography>
+                          )}
                         </Grid>
                       ))}
                     </Grid>

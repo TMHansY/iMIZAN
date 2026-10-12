@@ -190,6 +190,8 @@ A typical workflow is:
 
 ### Leaving or resuming an exam
 
+The camera check loads and warms up the proctoring models before a new timed attempt starts. Progress messages and retry controls are shown during preparation. The prepared models are reused for later exams in the same open page; a full reload needs preparation again. An existing attempt keeps its original deadline while preparing, and an already-expired attempt can finalize without loading the models. Detection runs sequentially, with a pause between completed passes, so slow inference does not accumulate overlapping runs.
+
 Starting an exam reserves an attempt on the server. Answers, question position, and available proctoring data are saved as progress changes. Browser Back and in-app navigation show a leave confirmation; refresh and tab-close actions use the browser's standard warning where supported.
 
 Returning resumes the same attempt with the original deadline. The timer keeps running while the student is away, and the deadline cannot extend beyond the exam's closing time. After expiry, the server rejects further answer changes and submission uses the last saved answers. If the browser was closed, the result is finalized when the student returns and submits the saved attempt; there is no background expiry worker.

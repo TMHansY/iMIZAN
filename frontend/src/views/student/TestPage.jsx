@@ -21,6 +21,7 @@ import { useGetExamsQuery, useGetQuestionsQuery } from '../../slices/examApiSlic
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { seededShuffle } from '../../utils/seededShuffle';
+import ProctoringGate from '../../components/shared/ProctoringGate';
 
 const TestPage = () => {
   const { examId } = useParams();
@@ -47,6 +48,16 @@ const TestPage = () => {
         screenshots: screenshot
           ? [...(prev.proctoringLog.screenshots || []), screenshot]
           : prev.proctoringLog.screenshots || [],
+      },
+    }));
+  const updateViolation = (eventId, changes) =>
+    session.update((prev) => ({
+      ...prev,
+      proctoringLog: {
+        ...prev.proctoringLog,
+        screenshots: (prev.proctoringLog.screenshots || []).map((event) =>
+          event.eventId === eventId ? { ...event, ...changes } : event,
+        ),
       },
     }));
   const navigate = useNavigate();
@@ -237,7 +248,13 @@ const TestPage = () => {
                     alignItems="start"
                     justifyContent="center"
                   >
-                    <WebCam cheatingLog={cheatingLog} incrementViolation={incrementViolation} />
+                    {session.timeLeft > 0 && !session.isFinalizing && (
+                      <WebCam
+                        cheatingLog={cheatingLog}
+                        incrementViolation={incrementViolation}
+                        updateViolation={updateViolation}
+                      />
+                    )}
                   </Box>
                 </BlankCard>
               </Grid>
@@ -249,4 +266,11 @@ const TestPage = () => {
   );
 };
 
-export default TestPage;
+export default function PreparedTestPage() {
+  const { examId } = useParams();
+  return (
+    <ProctoringGate key={examId}>
+      <TestPage />
+    </ProctoringGate>
+  );
+}

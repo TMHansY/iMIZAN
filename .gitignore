@@ -42,3 +42,7 @@ coverage/
 # Ignore Java files
 *.java
 *.class
+
+# Local presentation guides
+/docs/EXAM_PROCTORING_GUIDE.md
+/docs/SYSTEM_EXPLANATION.md

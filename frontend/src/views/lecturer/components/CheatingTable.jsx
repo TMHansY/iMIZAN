@@ -1,3 +1,4 @@
+import { formatTabInactivityDuration } from '../../../utils/tabInactivity';
 import React, { useEffect, useState } from 'react';
 import {
   Box,
@@ -248,19 +249,28 @@ export default function CheatingTable() {
                 <Card
                   sx={{ border: 0, borderRadius: '4px', boxShadow: (theme) => theme.shadows[1] }}
                 >
-                  <CardMedia
-                    component="img"
-                    image={screenshot.url}
-                    alt={`Violation - ${screenshot.type}`}
-                    sx={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
-                  />
+                  {screenshot.url ? (
+                    <CardMedia
+                      component="img"
+                      image={screenshot.url}
+                      alt={`Violation - ${screenshot.type}`}
+                      sx={{ width: '100%', height: 'auto', display: 'block', objectFit: 'contain' }}
+                    />
+                  ) : (
+                    <Typography sx={{ p: 2 }}>Screenshot unavailable</Typography>
+                  )}
                   <CardContent>
                     <Typography variant="subtitle2" color="text.secondary">
-                      Type: {screenshot.type}
+                      Type: {screenshot.type === 'tabSwitch' ? 'Tab Inactivity' : screenshot.type}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       Detected: {new Date(screenshot.detectedAt).toLocaleString()}
                     </Typography>
+                    {screenshot.type === 'tabSwitch' && (
+                      <Typography variant="caption" display="block" color="text.secondary">
+                        Time inactive: {formatTabInactivityDuration(screenshot.durationSeconds)}
+                      </Typography>
+                    )}
                   </CardContent>
                 </Card>
               </Grid>

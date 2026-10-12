@@ -38,6 +38,7 @@ import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import ShuffleOutlinedIcon from '@mui/icons-material/ShuffleOutlined';
 import PreviewIcon from '@mui/icons-material/Preview';
+import useProctoringModels from '../../hooks/useProctoringModels';
 
 const buildInstructionItems = (exam) => {
   const items = [
@@ -130,16 +131,26 @@ export default function ExamDetails() {
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   const [cameraVerified, setCameraVerified] = useState(false);
   const [cameraError, setCameraError] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const preparation = useProctoringModels(cameraDialogOpen);
 
   const handleOpenCameraCheck = () => {
     setCameraError(false);
+    setCameraReady(false);
     setCameraDialogOpen(true);
   };
 
-  const handleCameraReady = () => setCameraError(false);
-  const handleCameraError = () => setCameraError(true);
+  const handleCameraReady = () => {
+    setCameraError(false);
+    setCameraReady(true);
+  };
+  const handleCameraError = () => {
+    setCameraError(true);
+    setCameraReady(false);
+  };
 
   const handleConfirmCamera = () => {
+    if (!cameraReady || preparation.status !== 'ready') return;
     setCameraVerified(true);
     setCameraDialogOpen(false);
   };
@@ -305,10 +316,35 @@ export default function ExamDetails() {
               style={{ width: '100%', borderRadius: 8 }}
             />
           )}
+          <Alert
+            severity={
+              preparation.status === 'error'
+                ? 'error'
+                : preparation.status === 'ready'
+                ? 'success'
+                : 'info'
+            }
+            sx={{ mt: 2 }}
+            action={
+              preparation.status === 'error' ? (
+                <Button color="inherit" onClick={preparation.retry}>
+                  Retry
+                </Button>
+              ) : undefined
+            }
+          >
+            {preparation.message}
+            {preparation.status !== 'ready' &&
+              ' Preparation happens before a new timed attempt starts.'}
+          </Alert>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCameraDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" disabled={cameraError} onClick={handleConfirmCamera}>
+          <Button
+            variant="contained"
+            disabled={cameraError || !cameraReady || preparation.status !== 'ready'}
+            onClick={handleConfirmCamera}
+          >
             Looks Good, Continue
           </Button>
         </DialogActions>

@@ -1,7 +1,12 @@
-import React, { useRef, useState, useEffect } from 'react';
-import * as cocossd from '@tensorflow-models/coco-ssd';
-import * as faceapi from '@vladmandic/face-api';
+import React, { useRef, useEffect } from 'react';
+import {
+  prepareProctoringModels,
+  FACE_DETECTOR_OPTIONS,
+  yieldToBrowser,
+} from '../../../utils/proctoringModels';
+import { startDetectionLoop } from '../../../utils/detectionLoop';
 import Webcam from 'react-webcam';
+import useTabInactivity from '../../../hooks/useTabInactivity';
 import { drawRect } from './utilities';
 import { Box, Card } from '@mui/material';
 import { toast } from 'react-toastify';
@@ -14,51 +19,42 @@ const LOOK_AWAY_THRESHOLD = 0.16;
 // violation (filters out momentary flickers / quick glances).
 const FACE_ISSUE_SUSTAIN_MS = 3000;
 
-export default function Home({ cheatingLog, incrementViolation }) {
+export default function Home({ cheatingLog, incrementViolation, updateViolation }) {
   const webcamRef = useRef(null);
   const activeRef = useRef(true);
-  const detectionTimer = useRef(null);
   const canvasRef = useRef(null);
-  const [lastDetectionTime, setLastDetectionTime] = useState({});
-  const [, setScreenshots] = useState([]);
-
-  // Refs (not state) since these update every tick and shouldn't trigger renders.
+  const callbacks = useRef({ incrementViolation });
+  callbacks.current = { incrementViolation };
+  const lastDetectionTime = useRef({});
   const faceIssueStartRef = useRef(null);
 
-  useEffect(() => {
-    if (cheatingLog && cheatingLog.screenshots) {
-      setScreenshots(cheatingLog.screenshots);
-    }
-  }, [cheatingLog]);
-
-  const captureScreenshotAndUpload = async (type) => {
-    const video = webcamRef.current?.video;
-
-    if (!video || video.readyState !== 4 || video.videoWidth === 0 || video.videoHeight === 0) {
-      console.warn('Video not ready for screenshot');
-      return null;
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const dataUrl = canvas.toDataURL('image/jpeg');
-    const file = dataURLtoFile(dataUrl, `cheating_${Date.now()}.jpg`);
-
+  const captureScreenshotAndUpload = async (type, detectedAt = new Date()) => {
     try {
+      const video = webcamRef.current?.video;
+
+      if (!video || video.readyState !== 4 || video.videoWidth === 0 || video.videoHeight === 0) {
+        console.warn('Video not ready for screenshot');
+        return null;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      const file = dataURLtoFile(dataUrl, `cheating_${Date.now()}.jpg`);
+
       const result = await client.uploadFile(file, { store: true });
 
       const screenshot = {
         url: result.cdnUrl,
         type: type,
-        detectedAt: new Date(),
+        detectedAt,
       };
 
-      setScreenshots((prev) => [...prev, screenshot]);
       return screenshot;
     } catch (error) {
       console.error('❌ Upload failed:', error);
@@ -75,14 +71,14 @@ export default function Home({ cheatingLog, incrementViolation }) {
 
   const handleDetection = async (type) => {
     const now = Date.now();
-    const lastTime = lastDetectionTime[type] || 0;
+    const lastTime = lastDetectionTime.current[type] || 0;
 
     if (now - lastTime >= 3000) {
-      setLastDetectionTime((prev) => ({ ...prev, [type]: now }));
+      lastDetectionTime.current[type] = now;
 
       const screenshot = await captureScreenshotAndUpload(type);
       if (!activeRef.current) return;
-      incrementViolation(type, screenshot);
+      callbacks.current.incrementViolation(type, screenshot);
 
       // Non-blocking toast — doesn't require a click, doesn't interrupt
       // answering questions, and auto-dismisses on its own.
@@ -90,31 +86,6 @@ export default function Home({ cheatingLog, incrementViolation }) {
         autoClose: 2500,
         pauseOnHover: false,
       });
-    }
-  };
-
-  const loadModels = async () => {
-    await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-      faceapi.nets.faceLandmark68TinyNet.loadFromUri('/models'),
-    ]);
-  };
-
-  const runDetectionLoop = async () => {
-    try {
-      const cocoNet = await cocossd.load();
-      await loadModels();
-
-      if (!activeRef.current) {
-        cocoNet.dispose();
-        return;
-      }
-      detectionTimer.current = setInterval(() => {
-        detect(cocoNet).catch((err) => console.error('Detection loop error:', err));
-      }, 1000);
-    } catch (error) {
-      console.error('Error loading models:', error);
-      toast.error('Failed to load AI models. Please refresh the page.');
     }
   };
 
@@ -138,7 +109,7 @@ export default function Home({ cheatingLog, incrementViolation }) {
     return offsetRatio > LOOK_AWAY_THRESHOLD;
   };
 
-  const detect = async (cocoNet) => {
+  const detect = async ({ cocoNet, faceapi }, isActive) => {
     if (
       !webcamRef.current ||
       !webcamRef.current.video ||
@@ -155,12 +126,14 @@ export default function Home({ cheatingLog, incrementViolation }) {
 
     webcamRef.current.video.width = videoWidth;
     webcamRef.current.video.height = videoHeight;
-    canvasRef.current.width = videoWidth;
-    canvasRef.current.height = videoHeight;
+    if (!canvasRef.current || !isActive()) return;
+    if (canvasRef.current.width !== videoWidth) canvasRef.current.width = videoWidth;
+    if (canvasRef.current.height !== videoHeight) canvasRef.current.height = videoHeight;
 
     // --- coco-ssd: cell phone + multiple person detection only ---
     try {
       const objects = await cocoNet.detect(video);
+      if (!isActive() || !canvasRef.current) return;
       const ctx = canvasRef.current.getContext('2d');
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       drawRect(objects, ctx);
@@ -177,16 +150,18 @@ export default function Home({ cheatingLog, incrementViolation }) {
       console.error('Error during object detection:', error);
     }
 
+    // Allow input and rendering between the object and face passes.
+    await yieldToBrowser();
+    if (!isActive()) return;
+
     // --- face-api: unified check — no face OR face turned away, both
     // treated as one "not facing the screen" condition, sustained for a
     // few seconds before it counts as a violation.
     try {
       const faceResult = await faceapi
-        .detectSingleFace(
-          video,
-          new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }),
-        )
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions(FACE_DETECTOR_OPTIONS))
         .withFaceLandmarks(true);
+      if (!isActive()) return;
 
       const notFacingScreen = !faceResult || isLookingAway(faceResult.landmarks);
 
@@ -207,47 +182,37 @@ export default function Home({ cheatingLog, incrementViolation }) {
 
   useEffect(() => {
     activeRef.current = true;
-    runDetectionLoop();
+    let cancelled = false;
+    let stop;
+    prepareProctoringModels()
+      .then((models) => {
+        if (cancelled) return;
+        stop = startDetectionLoop(
+          (isActive) => detect(models, isActive),
+          (error) => console.error('Detection loop error:', error),
+        );
+      })
+      .catch(() => {
+        if (!cancelled)
+          toast.error('Camera monitoring could not start. Please return to the camera check.');
+      });
     return () => {
+      cancelled = true;
       activeRef.current = false;
-      clearInterval(detectionTimer.current);
+      stop?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Tab-switch + cursor-left-page detection: browsers don't allow JS to
-  // prevent either of these, but the Page Visibility API and mouseleave
-  // events reliably tell us when they happen. Both feed the same
-  // 'tabSwitch' counter, since either signals attention leaving the exam.
-  useEffect(() => {
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        handleDetection('tabSwitch');
-      }
-    };
-
-    const handleMouseLeave = (event) => {
-      if (!event.relatedTarget) {
-        handleDetection('tabSwitch');
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Cursor-leave detection only makes sense on devices with a real mouse —
-    // touchscreens don't have a persistent cursor and can misfire this event.
-    if (!isTouchDevice) {
-      document.addEventListener('mouseleave', handleMouseLeave);
-    }
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useTabInactivity({
+    cheatingLog,
+    incrementViolation: (type, screenshot) => {
+      incrementViolation(type, screenshot);
+      toast.warning(violationMessages.tabSwitch, { autoClose: 2500, pauseOnHover: false });
+    },
+    updateViolation,
+    capture: captureScreenshotAndUpload,
+  });
 
   return (
     <Box>

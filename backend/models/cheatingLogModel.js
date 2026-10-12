@@ -19,7 +19,14 @@ const cheatingLogSchema = new mongoose.Schema(
 
     screenshots: [
       {
-        url: { type: String, required: true },
+        url: {
+          type: String,
+          required() {
+            return this.type !== 'tabSwitch';
+          },
+        },
+        eventId: String,
+        durationSeconds: { type: Number, min: 0 },
         type: {
           type: String,
           enum: ['noFace', 'multipleFace', 'cellPhone', 'tabSwitch'],
