@@ -11,6 +11,42 @@ import isExamOwner from '../utils/checkExamOwnership.js';
 
 const PASS_THRESHOLD_PERCENTAGE = 50;
 
+const releaseSelectedResults = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'lecturer') {
+    res.status(403);
+    throw new Error('Not authorized to release results');
+  }
+  const { ids } = req.body;
+  if (
+    !Array.isArray(ids) ||
+    ids.length === 0 ||
+    ids.some((id) => typeof id !== 'string' || !/^[a-f\d]{24}$/i.test(id))
+  ) {
+    res.status(400);
+    throw new Error('Select valid results to release');
+  }
+  const uniqueIds = [...new Set(ids.map((id) => id.toLowerCase()))];
+  const selectedResults = await Result.find({ _id: { $in: uniqueIds } }).select('examId');
+  if (selectedResults.length !== uniqueIds.length) {
+    res.status(404);
+    throw new Error('Some selected results no longer exist. Refresh the list and try again.');
+  }
+  const examIds = [...new Set(selectedResults.map((result) => result.examId))];
+  const exams = await Exam.find({ examId: { $in: examIds } });
+  if (exams.length !== examIds.length || exams.some((exam) => !isExamOwner(exam, req.user))) {
+    res.status(403);
+    throw new Error('Not authorized to release one or more selected results');
+  }
+  const update = await Result.updateMany(
+    { _id: { $in: uniqueIds }, examId: { $in: examIds } },
+    { $set: { showToStudent: true } },
+  );
+  res.status(200).json({
+    success: true,
+    data: { matchedCount: update.matchedCount, modifiedCount: update.modifiedCount },
+  });
+});
+
 const attachStatus = (result) => {
   const obj = result.toObject ? result.toObject() : result;
   const status =
@@ -490,6 +526,7 @@ const deleteResult = asyncHandler(async (req, res) => {
 });
 
 export {
+  releaseSelectedResults,
   saveResult,
   getResultsByExamId,
   getUserResults,

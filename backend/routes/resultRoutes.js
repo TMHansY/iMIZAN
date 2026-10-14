@@ -14,12 +14,14 @@ import {
   setExamResultsVisibility,
   getMyExamStatus,
   getPendingReviewSummary,
+  releaseSelectedResults,
 } from '../controllers/resultController.js';
 
 const resultRoutes = express.Router();
 
 // All routes are protected
 resultRoutes.use(protect);
+resultRoutes.put('/results/release-selected', releaseSelectedResults);
 resultRoutes.post('/exam-attempts/:examId/start', startOrResumeAttempt);
 resultRoutes.put('/exam-attempts/:attemptId', saveAttemptProgress);
 

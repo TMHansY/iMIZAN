@@ -104,7 +104,10 @@ const EditExamPage = () => {
         liveDate: toDateTimeLocal(currentExam.liveDate),
         deadDate: toDateTimeLocal(currentExam.deadDate),
         maxAttempts: currentExam.maxAttempts || 1,
-        allowReview: currentExam.allowReview || false,
+        allowReview: currentExam.allowReview ?? false,
+        allowBackNavigation: currentExam.allowBackNavigation ?? false,
+        randomizeQuestions: currentExam.randomizeQuestions ?? false,
+        randomizeOptions: currentExam.randomizeOptions ?? false,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

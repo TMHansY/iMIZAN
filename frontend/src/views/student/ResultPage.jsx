@@ -1,5 +1,5 @@
 import { formatTabInactivityDuration } from '../../utils/tabInactivity';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -30,6 +30,7 @@ import {
   Button,
   Stack,
   Divider,
+  Checkbox,
 } from '@mui/material';
 import { Visibility, VisibilityOff, Search } from '@mui/icons-material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -55,6 +56,9 @@ const ResultPage = () => {
   const [selectedExam, setSelectedExam] = useState('all');
   const [exams, setExams] = useState([]);
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+  const [selectedResultIds, setSelectedResultIds] = useState([]);
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
+  const visibilityPending = useRef(false);
 
   // Review dialog state
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
@@ -99,9 +103,58 @@ const ResultPage = () => {
       withCredentials: true,
     });
     setResults(response.data.data);
+    setSelectedResultIds((ids) =>
+      ids.filter((id) =>
+        response.data.data.some((result) => result._id === id && !result.showToStudent),
+      ),
+    );
+  };
+
+  const beginVisibilityUpdate = () => {
+    if (visibilityPending.current) return false;
+    visibilityPending.current = true;
+    setVisibilitySaving(true);
+    return true;
+  };
+
+  const endVisibilityUpdate = () => {
+    visibilityPending.current = false;
+    setVisibilitySaving(false);
+  };
+
+  const handleReleaseSelected = async () => {
+    if (!selectedResultIds.length || !beginVisibilityUpdate()) return;
+    try {
+      const { data } = await axiosInstance.put(
+        '/api/users/results/release-selected',
+        { ids: selectedResultIds },
+        { withCredentials: true },
+      );
+      setResults((previous) =>
+        previous.map((result) =>
+          selectedResultIds.includes(result._id) ? { ...result, showToStudent: true } : result,
+        ),
+      );
+      setSelectedResultIds([]);
+      toast.success(`${data.data.modifiedCount} result(s) released to students`);
+      try {
+        await refreshResults();
+      } catch (err) {
+        toast.error(
+          'Results were released, but the list could not refresh. Please reload the page.',
+        );
+      }
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || 'Unable to confirm release. You can safely retry.',
+      );
+    } finally {
+      endVisibilityUpdate();
+    }
   };
 
   const handleToggleVisibility = async (resultId) => {
+    if (!beginVisibilityUpdate()) return;
     try {
       await axiosInstance.put(
         `/api/users/results/${resultId}/toggle-visibility`,
@@ -112,15 +165,19 @@ const ResultPage = () => {
       await refreshResults();
     } catch (err) {
       toast.error('Failed to update visibility');
+    } finally {
+      endVisibilityUpdate();
     }
   };
 
   const handleExamChange = (examId) => {
     setSelectedExam(examId);
+    setSelectedResultIds([]);
   };
 
   const handleBulkVisibility = async (showToStudent) => {
     if (selectedExam === 'all') return;
+    if (!beginVisibilityUpdate()) return;
     try {
       const response = await axiosInstance.put(
         `/api/users/results/exam/${selectedExam}/visibility`,
@@ -135,6 +192,8 @@ const ResultPage = () => {
       await refreshResults();
     } catch (err) {
       toast.error('Failed to update visibility for this exam');
+    } finally {
+      endVisibilityUpdate();
     }
   };
 
@@ -235,6 +294,24 @@ const ResultPage = () => {
       };
     });
   }, [filteredResults]);
+
+  const unreleasedResults = filteredResults.filter((result) => !result.showToStudent);
+  const renderSelection = (result) => (
+    <Checkbox
+      checked={selectedResultIds.includes(result._id)}
+      disabled={visibilitySaving || result.showToStudent}
+      onChange={() =>
+        setSelectedResultIds((ids) =>
+          ids.includes(result._id) ? ids.filter((id) => id !== result._id) : [...ids, result._id],
+        )
+      }
+      inputProps={{
+        'aria-label': `Select ${result.userId?.name || 'student'}, attempt ${
+          result.attemptNumber
+        }, ${exams.find((exam) => exam.examId === result.examId)?.examName || 'exam'}`,
+      }}
+    />
+  );
 
   const toggleGroup = (key) => {
     setExpandedGroups((prev) => {
@@ -438,9 +515,10 @@ const ResultPage = () => {
         <Grid item xs={12}>
           <DashboardCard title="Exam Results">
             <Box mb={3} display="flex" gap={2} flexWrap="wrap" alignItems="center">
-              <FormControl sx={{ minWidth: 200 }}>
-                <InputLabel>Select Exam</InputLabel>
+              <FormControl sx={{ minWidth: 200 }} disabled={visibilitySaving}>
+                <InputLabel id="lecturer-results-exam-label">Select Exam</InputLabel>
                 <Select
+                  labelId="lecturer-results-exam-label"
                   value={selectedExam}
                   onChange={(e) => handleExamChange(e.target.value)}
                   label="Select Exam"
@@ -455,9 +533,13 @@ const ResultPage = () => {
               </FormControl>
               <TextField
                 label="Search Students"
+                disabled={visibilitySaving}
                 variant="outlined"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSelectedResultIds([]);
+                }}
                 sx={{ minWidth: 200 }}
                 InputProps={{
                   startAdornment: (
@@ -475,6 +557,7 @@ const ResultPage = () => {
                     color="success"
                     startIcon={<Visibility />}
                     onClick={() => handleBulkVisibility(true)}
+                    disabled={visibilitySaving}
                   >
                     Show All Results
                   </Button>
@@ -484,6 +567,7 @@ const ResultPage = () => {
                     color="inherit"
                     startIcon={<VisibilityOff />}
                     onClick={() => handleBulkVisibility(false)}
+                    disabled={visibilitySaving}
                   >
                     Hide All Results
                   </Button>
@@ -491,10 +575,54 @@ const ResultPage = () => {
               )}
             </Box>
 
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', sm: 'center' }}
+              mb={2}
+            >
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<Visibility />}
+                disabled={visibilitySaving || selectedResultIds.length === 0}
+                onClick={handleReleaseSelected}
+              >
+                {visibilitySaving ? 'Updating…' : `Release Selected (${selectedResultIds.length})`}
+              </Button>
+              <Typography variant="body2" color="text.secondary">
+                Select results to release to students. Select all includes earlier attempts matching
+                these filters. Already released results cannot be selected.
+              </Typography>
+            </Stack>
+
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={
+                          unreleasedResults.length > 0 &&
+                          selectedResultIds.length === unreleasedResults.length
+                        }
+                        indeterminate={
+                          selectedResultIds.length > 0 &&
+                          selectedResultIds.length < unreleasedResults.length
+                        }
+                        disabled={visibilitySaving || unreleasedResults.length === 0}
+                        onChange={() =>
+                          setSelectedResultIds((ids) =>
+                            ids.length === unreleasedResults.length
+                              ? []
+                              : unreleasedResults.map((result) => result._id),
+                          )
+                        }
+                        inputProps={{
+                          'aria-label': 'Select all unreleased results matching filters',
+                        }}
+                      />
+                    </TableCell>
                     <TableCell />
                     <TableCell>Student Name</TableCell>
                     <TableCell>Email</TableCell>
@@ -519,6 +647,7 @@ const ResultPage = () => {
                       <>
                         <IconButton
                           onClick={() => handleToggleVisibility(result._id)}
+                          disabled={visibilitySaving}
                           color={result.showToStudent ? 'success' : 'default'}
                           title="Toggle visibility to student"
                         >
@@ -526,12 +655,14 @@ const ResultPage = () => {
                         </IconButton>
                         <IconButton
                           onClick={() => handleOpenReview(result)}
+                          disabled={visibilitySaving}
                           title="Review log & decide pass/fail"
                         >
                           <RateReviewIcon />
                         </IconButton>
                         <IconButton
                           onClick={() => handleDeleteResult(result._id)}
+                          disabled={visibilitySaving}
                           color="error"
                           title="Delete this attempt"
                         >
@@ -543,6 +674,7 @@ const ResultPage = () => {
                     return (
                       <React.Fragment key={group.key}>
                         <TableRow>
+                          <TableCell padding="checkbox">{renderSelection(group.latest)}</TableCell>
                           <TableCell>
                             {group.attempts.length > 1 && (
                               <IconButton size="small" onClick={() => toggleGroup(group.key)}>
@@ -596,6 +728,7 @@ const ResultPage = () => {
                         {isExpanded &&
                           group.attempts.map((attempt) => (
                             <TableRow key={attempt._id} sx={{ bgcolor: 'grey.50' }}>
+                              <TableCell padding="checkbox">{renderSelection(attempt)}</TableCell>
                               <TableCell />
                               <TableCell colSpan={2}>
                                 <Typography variant="body2" color="textSecondary" pl={2}>
