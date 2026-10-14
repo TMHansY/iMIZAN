@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -15,6 +15,8 @@ import {
   CircularProgress,
   Divider,
   LinearProgress,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import PageContainer from 'src/components/container/PageContainer';
@@ -26,6 +28,10 @@ const CourseEnrollments = () => {
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const actionPending = useRef(false);
+  const enrollmentRequest = useRef(0);
 
   const fetchCourses = async () => {
     try {
@@ -45,16 +51,26 @@ const CourseEnrollments = () => {
   };
 
   const fetchEnrollments = async (courseId) => {
+    const request = ++enrollmentRequest.current;
     try {
       setLoading(true);
       const { data } = await axiosInstance.get(`/api/enrollments/course/${courseId}`, {
         withCredentials: true,
       });
+      if (request !== enrollmentRequest.current) return;
       setEnrollments(data);
+      setSelectedIds((ids) =>
+        ids.filter((id) =>
+          data.some((enrollment) => enrollment._id === id && enrollment.status === 'pending'),
+        ),
+      );
     } catch (err) {
+      if (request !== enrollmentRequest.current) return;
+      setEnrollments([]);
+      setSelectedIds([]);
       toast.error('Failed to load enrollments');
     } finally {
-      setLoading(false);
+      if (request === enrollmentRequest.current) setLoading(false);
     }
   };
 
@@ -68,23 +84,46 @@ const CourseEnrollments = () => {
     }
   }, [selectedCourseId]);
 
-  const handleApprove = async (id) => {
+  const handleDecision = async (id, decision) => {
+    if (actionPending.current) return;
+    actionPending.current = true;
+    setSaving(true);
     try {
-      await axiosInstance.put(`/api/enrollments/${id}/approve`, {}, { withCredentials: true });
-      toast.success('Student approved');
-      fetchEnrollments(selectedCourseId);
+      await axiosInstance.put(`/api/enrollments/${id}/${decision}`, {}, { withCredentials: true });
+      toast.success(decision === 'approve' ? 'Student approved' : 'Application rejected');
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Failed to approve');
+      toast.error(err?.response?.data?.message || `Failed to ${decision}`);
+    } finally {
+      await fetchEnrollments(selectedCourseId);
+      actionPending.current = false;
+      setSaving(false);
     }
   };
 
-  const handleReject = async (id) => {
+  const handleBulkApprove = async () => {
+    if (actionPending.current || selectedIds.length === 0 || selectedIds.length > remainingPlaces)
+      return;
+    actionPending.current = true;
+    setSaving(true);
+    let approvedCount = 0;
     try {
-      await axiosInstance.put(`/api/enrollments/${id}/reject`, {}, { withCredentials: true });
-      toast.success('Application rejected');
-      fetchEnrollments(selectedCourseId);
+      // Reuse the server's ownership and capacity checks, one approval at a time.
+      for (const id of selectedIds) {
+        await axiosInstance.put(`/api/enrollments/${id}/approve`, {}, { withCredentials: true });
+        approvedCount += 1;
+      }
+      toast.success(`${approvedCount} student${approvedCount === 1 ? '' : 's'} approved`);
     } catch (err) {
-      toast.error('Failed to reject');
+      toast.error(
+        `${approvedCount} of ${selectedIds.length} students approved. ${
+          err?.response?.data?.message ||
+          'Approval stopped. Check the refreshed list before retrying.'
+        }`,
+      );
+    } finally {
+      await fetchEnrollments(selectedCourseId);
+      actionPending.current = false;
+      setSaving(false);
     }
   };
 
@@ -92,6 +131,15 @@ const CourseEnrollments = () => {
   const pending = enrollments.filter((e) => e.status === 'pending');
   const approved = enrollments.filter((e) => e.status === 'approved');
   const atLimit = selectedCourse && approved.length >= selectedCourse.studentLimit;
+  const remainingPlaces = selectedCourse
+    ? Math.max(0, selectedCourse.studentLimit - approved.length)
+    : 0;
+
+  const toggleSelected = (id) => {
+    setSelectedIds((ids) =>
+      ids.includes(id) ? ids.filter((selected) => selected !== id) : [...ids, id],
+    );
+  };
 
   if (courses.length === 0 && !loading) {
     return (
@@ -106,12 +154,19 @@ const CourseEnrollments = () => {
   return (
     <PageContainer title="Course Enrollments" description="Manage student applications">
       <Box mb={3}>
-        <FormControl sx={{ minWidth: 250 }}>
-          <InputLabel>Select Course</InputLabel>
+        <FormControl sx={{ minWidth: 250, maxWidth: '100%' }} disabled={saving}>
+          <InputLabel id="enrollment-course-label">Select Course</InputLabel>
           <Select
+            labelId="enrollment-course-label"
             value={selectedCourseId}
             label="Select Course"
-            onChange={(e) => setSelectedCourseId(e.target.value)}
+            onChange={(e) => {
+              enrollmentRequest.current += 1;
+              setSelectedIds([]);
+              setEnrollments([]);
+              setLoading(true);
+              setSelectedCourseId(e.target.value);
+            }}
           >
             {courses.map((course) => (
               <MenuItem key={course.courseId} value={course.courseId}>
@@ -140,8 +195,8 @@ const CourseEnrollments = () => {
               />
               {atLimit && (
                 <Typography variant="caption" color="error" display="block" mt={1}>
-                  This course is at its student limit. New approvals are blocked until the limit
-                  is increased or a student is removed.
+                  This course is at its student limit. New approvals are blocked until the limit is
+                  increased or a student is removed.
                 </Typography>
               )}
             </DashboardCard>
@@ -151,20 +206,80 @@ const CourseEnrollments = () => {
             {pending.length === 0 ? (
               <Typography color="text.secondary">No pending applications.</Typography>
             ) : (
-              <List disablePadding>
-                {pending.map((enrollment, index) => (
-                  <React.Fragment key={enrollment._id}>
-                    {index > 0 && <Divider />}
-                    <ListItem
-                      sx={{ py: 1.5 }}
-                      secondaryAction={
-                        <Stack direction="row" spacing={1}>
+              <>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  justifyContent="space-between"
+                  spacing={1}
+                  mb={1}
+                >
+                  <FormControlLabel
+                    label="Select all"
+                    control={
+                      <Checkbox
+                        checked={selectedIds.length === pending.length}
+                        indeterminate={
+                          selectedIds.length > 0 && selectedIds.length < pending.length
+                        }
+                        disabled={saving}
+                        onChange={() =>
+                          setSelectedIds((ids) =>
+                            ids.length === pending.length
+                              ? []
+                              : pending.map((enrollment) => enrollment._id),
+                          )
+                        }
+                      />
+                    }
+                  />
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="success"
+                    disabled={
+                      saving || selectedIds.length === 0 || selectedIds.length > remainingPlaces
+                    }
+                    onClick={handleBulkApprove}
+                  >
+                    {saving ? 'Processing…' : `Approve Selected (${selectedIds.length})`}
+                  </Button>
+                </Stack>
+                {selectedIds.length > remainingPlaces && (
+                  <Typography variant="body2" color="error" mb={1} role="status">
+                    Only {remainingPlaces} place{remainingPlaces === 1 ? '' : 's'} available. Select
+                    fewer students or ask an admin to increase the course limit.
+                  </Typography>
+                )}
+                <List disablePadding>
+                  {pending.map((enrollment, index) => (
+                    <React.Fragment key={enrollment._id}>
+                      {index > 0 && <Divider />}
+                      <ListItem sx={{ py: 1.5, px: 0, gap: 1, flexWrap: 'wrap' }}>
+                        <Checkbox
+                          checked={selectedIds.includes(enrollment._id)}
+                          disabled={saving}
+                          onChange={() => toggleSelected(enrollment._id)}
+                          inputProps={{
+                            'aria-label': `Select ${enrollment.student?.name || 'student'} (${
+                              enrollment.student?.email || enrollment._id
+                            })`,
+                          }}
+                        />
+                        <ListItemText
+                          sx={{ flex: '1 1 180px', overflowWrap: 'anywhere' }}
+                          primary={enrollment.student?.name}
+                          secondary={`${enrollment.student?.email} · ${
+                            enrollment.student?.idNumber || 'No ID on file'
+                          }`}
+                        />
+                        <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
                           <Button
                             size="small"
                             variant="contained"
                             color="success"
-                            disabled={atLimit}
-                            onClick={() => handleApprove(enrollment._id)}
+                            disabled={saving || atLimit}
+                            onClick={() => handleDecision(enrollment._id, 'approve')}
                           >
                             Approve
                           </Button>
@@ -172,21 +287,17 @@ const CourseEnrollments = () => {
                             size="small"
                             variant="outlined"
                             color="error"
-                            onClick={() => handleReject(enrollment._id)}
+                            disabled={saving}
+                            onClick={() => handleDecision(enrollment._id, 'reject')}
                           >
                             Reject
                           </Button>
                         </Stack>
-                      }
-                    >
-                      <ListItemText
-                        primary={enrollment.student?.name}
-                        secondary={`${enrollment.student?.email} · ${enrollment.student?.idNumber || 'No ID on file'}`}
-                      />
-                    </ListItem>
-                  </React.Fragment>
-                ))}
-              </List>
+                      </ListItem>
+                    </React.Fragment>
+                  ))}
+                </List>
+              </>
             )}
           </DashboardCard>
 

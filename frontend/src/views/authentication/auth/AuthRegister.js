@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Button, Select, MenuItem } from '@mui/material';
 
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
+import PasswordField from '../../../components/forms/theme-elements/PasswordField';
 import { Stack } from '@mui/system';
 
 const AuthRegister = ({ formik, title, subtitle, subtext }) => {
@@ -99,10 +100,9 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
           >
             Password
           </Typography>
-          <CustomTextField
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             variant="outlined"
             value={values.password}
             onChange={handleChange}
@@ -122,10 +122,9 @@ const AuthRegister = ({ formik, title, subtitle, subtext }) => {
           >
             Confirm Password
           </Typography>
-          <CustomTextField
+          <PasswordField
             id="confirm_password"
             name="confirm_password"
-            type="password"
             autoComplete="false"
             variant="outlined"
             value={values.confirm_password}

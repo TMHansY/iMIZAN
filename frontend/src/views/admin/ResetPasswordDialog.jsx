@@ -8,9 +8,9 @@ import {
   DialogContentText,
   DialogTitle,
   Stack,
-  TextField,
 } from '@mui/material';
 import axiosInstance from '../../axios';
+import PasswordField from '../../components/forms/theme-elements/PasswordField';
 
 export default function ResetPasswordDialog({ account, onClose, onSuccess }) {
   const [password, setPassword] = useState('');
@@ -77,9 +77,8 @@ export default function ResetPasswordDialog({ account, onClose, onSuccess }) {
               role and approval status stay the same.
             </Alert>
             {error && <Alert severity="error">{error}</Alert>}
-            <TextField
+            <PasswordField
               label="New password"
-              type="password"
               autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -88,9 +87,8 @@ export default function ResetPasswordDialog({ account, onClose, onSuccess }) {
               disabled={saving}
               helperText="At least 6 characters; ask the user to change it after signing in."
             />
-            <TextField
+            <PasswordField
               label="Confirm new password"
-              type="password"
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
@@ -98,9 +96,8 @@ export default function ResetPasswordDialog({ account, onClose, onSuccess }) {
               fullWidth
               disabled={saving}
             />
-            <TextField
+            <PasswordField
               label="Your administrator password"
-              type="password"
               autoComplete="current-password"
               value={adminPassword}
               onChange={(event) => setAdminPassword(event.target.value)}

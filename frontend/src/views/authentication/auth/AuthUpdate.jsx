@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
+import PasswordField from '../../../components/forms/theme-elements/PasswordField';
 import { Stack } from '@mui/system';
 
 const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent, isLecturer }) => {
@@ -94,10 +95,9 @@ const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent, isLecturer })
           >
             Password
           </Typography>
-          <CustomTextField
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             variant="outlined"
             value={values.password}
             onChange={handleChange}
@@ -117,10 +117,9 @@ const AuthUpdate = ({ formik, title, subtitle, subtext, isStudent, isLecturer })
           >
             Confirm Password
           </Typography>
-          <CustomTextField
+          <PasswordField
             id="confirm_password"
             name="confirm_password"
-            type="password"
             autoComplete="false"
             variant="outlined"
             value={values.confirm_password}

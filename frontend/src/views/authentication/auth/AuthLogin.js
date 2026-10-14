@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
+import PasswordField from '../../../components/forms/theme-elements/PasswordField';
 
 const AuthLogin = ({ formik, title, subtitle, subtext }) => {
   const { values, errors, touched, handleBlur, handleChange, handleSubmit } = formik;
@@ -59,10 +60,9 @@ const AuthLogin = ({ formik, title, subtitle, subtext }) => {
           >
             Password
           </Typography>
-          <CustomTextField
+          <PasswordField
             id="password"
             name="password"
-            type="password"
             variant="outlined"
             value={values.password}
             onChange={handleChange}
