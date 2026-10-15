@@ -29,7 +29,7 @@ const Sidebar = ({ isMobileSidebarOpen, onSidebarClose }) => {
         </Box>
         <Box>
           <Typography variant="h3" fontWeight={700}>
-            iMIZAN
+            iTKC
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Examination platform

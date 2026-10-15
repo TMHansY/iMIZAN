@@ -6,14 +6,14 @@ import AuthLayout from './AuthLayout';
 
 export default function ForgotPassword() {
   return (
-    <PageContainer title="Password help" description="Get help accessing your iMIZAN account">
+    <PageContainer title="Password help" description="Get help accessing your iTKC account">
       <AuthLayout
         title="Forgot your password?"
         description="Your administrator can help you regain access."
       >
         <Stack spacing={3}>
           <Typography color="text.secondary">
-            Contact your institution’s iMIZAN administrator through your usual support channel.
+            Contact your institution’s iTKC administrator through your usual support channel.
             Provide your name and student or staff ID so they can verify your identity and reset
             your password.
           </Typography>

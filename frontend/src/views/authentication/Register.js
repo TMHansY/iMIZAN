@@ -76,7 +76,7 @@ const Register = () => {
 
   return (
     <PageContainer title="Register" description="this is Register page">
-      <AuthLayout title="Create your account" description="Join your learning community on iMIZAN.">
+      <AuthLayout title="Create your account" description="Join your learning community on iTKC.">
         <AuthRegister
           formik={formik}
           onSubmit={handleSubmit}

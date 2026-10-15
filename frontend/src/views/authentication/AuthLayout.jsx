@@ -23,7 +23,7 @@ export default function AuthLayout({ title, description, children }) {
         <Stack direction="row" alignItems="center" spacing={1.5}>
           <SchoolOutlinedIcon />
           <Typography variant="h3" fontWeight={700}>
-            iMIZAN
+            iTKC
           </Typography>
         </Stack>
         <Box sx={{ py: 8, maxWidth: 440 }}>
@@ -66,7 +66,7 @@ export default function AuthLayout({ title, description, children }) {
         >
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography color="primary" variant="h4" fontWeight={700}>
-              iMIZAN
+              iTKC
             </Typography>
             <ThemeToggle />
           </Stack>
