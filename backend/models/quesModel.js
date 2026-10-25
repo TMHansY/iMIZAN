@@ -22,6 +22,10 @@ const questionSchema = mongoose.Schema(
       type: String,
       default: null,
     },
+    videoUrl: {
+      type: String,
+      default: null,
+    },
     ansmarks: {
       type: Number,
       required: false,

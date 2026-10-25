@@ -28,8 +28,14 @@ export default function useExamAttempt(examId) {
   const submitting = useRef(false);
   const autoSubmitted = useRef(false);
   const mounted = useRef(true);
+  const forcedLeaving = useRef(false);
   const blocker = useBlocker(({ currentLocation, nextLocation }) =>
-    Boolean(attempt && !submitted && currentLocation.pathname !== nextLocation.pathname),
+    Boolean(
+      attempt &&
+        !submitted &&
+        !forcedLeaving.current &&
+        currentLocation.pathname !== nextLocation.pathname,
+    ),
   );
 
   const backup = useCallback((value) => {
@@ -74,6 +80,7 @@ export default function useExamAttempt(examId) {
     mounted.current = true;
     active.current = null;
     autoSubmitted.current = false;
+    forcedLeaving.current = false;
     setAttempt(null);
     setLoading(true);
     setError('');
@@ -233,6 +240,23 @@ export default function useExamAttempt(examId) {
       if (mounted.current) setLeaving(false);
     }
   };
+
+  const forceLeave = async () => {
+    if (submitting.current || leaving.current || !active.current) return false;
+    forcedLeaving.current = true;
+    leaving.current = true;
+    setLeaving(true);
+    try {
+      if (!finishing.current && Date.now() < active.current.localDeadline) {
+        return await save(snapshot.current);
+      }
+      return true;
+    } finally {
+      leaving.current = false;
+      if (mounted.current) setLeaving(false);
+    }
+  };
+
   return {
     attempt,
     progress,
@@ -247,5 +271,6 @@ export default function useExamAttempt(examId) {
     submit,
     blocker,
     leave,
+    forceLeave,
   };
 }

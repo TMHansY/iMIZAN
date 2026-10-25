@@ -1,6 +1,4 @@
 import React from 'react';
-import Grid from '@mui/material/Grid';
-import Avatar from '@mui/material/Avatar';
 import { Box, Button, Stack, Typography } from '@mui/material';
 
 const NumberOfQuestions = ({
@@ -15,14 +13,11 @@ const NumberOfQuestions = ({
   timeLeft,
   isSubmitting,
 }) => {
-  const totalQuestions = questionLength;
-  const questionNumbers = Array.from({ length: totalQuestions }, (_, index) => index + 1);
-
-  const rows = [];
-  for (let i = 0; i < questionNumbers.length; i += 5) {
-    rows.push(questionNumbers.slice(i, i + 5));
-  }
-
+  const answeredCount = questions.filter((question) =>
+    answeredQuestionIds.includes(question._id),
+  ).length;
+  const timerColor =
+    timeLeft <= 300 ? 'error.main' : timeLeft <= 600 ? 'warning.main' : 'text.primary';
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -30,79 +25,97 @@ const NumberOfQuestions = ({
   };
 
   return (
-    <>
-      <Box
-        position="sticky"
-        top="0"
-        zIndex={1}
-        bgcolor="background.paper"
-        paddingY="10px"
-        width="100%"
-        px={3}
+    <Box sx={{ p: { xs: 2, sm: 2.25 } }}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        justifyContent="space-between"
+        spacing={1}
+        mb={1.5}
       >
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          gap={1}
-        >
-          <Typography variant="h6">
-            Question: {currentQuestionIndex + 1}/{totalQuestions}
+        <Box>
+          <Typography variant="h6" fontWeight={700}>
+            Question {currentQuestionIndex + 1} of {questionLength}
           </Typography>
-          <Typography variant="h6">Time Left: {formatTime(timeLeft)}</Typography>
-          {allowBackNavigation && (
+          <Typography variant="body2" color="text.secondary">
+            {answeredCount} of {questionLength} answered
+          </Typography>
+        </Box>
+        <Box textAlign={{ xs: 'left', sm: 'right' }}>
+          <Typography variant="caption" color="text.secondary" display="block">
+            Time remaining
+          </Typography>
+          <Typography variant="h5" fontWeight={700} color={timerColor} aria-live="polite">
+            {formatTime(timeLeft)}
+          </Typography>
+        </Box>
+      </Stack>
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
+          gap: 1,
+        }}
+      >
+        {Array.from({ length: questionLength }, (_, index) => {
+          const question = questions[index];
+          const isAnswered = question && answeredQuestionIds.includes(question._id);
+          const isCurrent = index === currentQuestionIndex;
+
+          return (
             <Button
-              variant="contained"
-              color="success"
-              onClick={onSubmit}
-              disabled={!allAnswered || isSubmitting || timeLeft === 0}
+              key={question?._id || index}
+              variant={isAnswered ? 'contained' : 'outlined'}
+              color={isAnswered ? 'success' : 'inherit'}
+              aria-label={`Question ${index + 1}${isCurrent ? ', current' : ''}${
+                isAnswered ? ', answered' : ', unanswered'
+              }`}
+              aria-current={isCurrent ? 'step' : undefined}
+              disabled={!allowBackNavigation}
+              onClick={() => onJumpToQuestion(index)}
+              sx={{
+                minWidth: 44,
+                width: '100%',
+                height: 44,
+                p: 0,
+                borderWidth: isCurrent ? 3 : 1,
+                borderColor: isCurrent ? 'primary.main' : undefined,
+                bgcolor: isCurrent && !isAnswered ? 'action.selected' : undefined,
+                fontWeight: isCurrent ? 700 : 500,
+                '&.Mui-disabled': { opacity: 0.75, color: 'text.primary' },
+              }}
             >
-              Submit Exam
+              {index + 1}
             </Button>
-          )}
+          );
+        })}
+      </Box>
+
+      {allowBackNavigation && (
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          justifyContent="space-between"
+          spacing={1.5}
+          mt={2}
+        >
+          <Typography variant="body2" color={allAnswered ? 'success.main' : 'text.secondary'}>
+            {allAnswered
+              ? 'All questions answered. You can submit when ready.'
+              : 'Answer every question to submit the exam.'}
+          </Typography>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={onSubmit}
+            disabled={!allAnswered || isSubmitting || timeLeft === 0}
+          >
+            {isSubmitting ? 'Submitting…' : 'Submit Exam'}
+          </Button>
         </Stack>
-      </Box>
-
-      <Box p={3} mt={5} maxHeight="270px">
-        <Grid container spacing={1}>
-          {rows.map((row, rowIndex) => (
-            <Grid key={rowIndex} item xs={12}>
-              <Stack direction="row" alignItems="center" justifyContent="start">
-                {row.map((questionNumber) => {
-                  const index = questionNumber - 1;
-                  const isAnswered =
-                    questions[index] && answeredQuestionIds.includes(questions[index]._id);
-                  const isCurrent = index === currentQuestionIndex;
-
-                  return (
-                    <Avatar
-                      key={questionNumber}
-                      variant="rounded"
-                      sx={{
-                        width: '40px',
-                        height: '40px',
-                        fontSize: '20px',
-                        cursor: allowBackNavigation ? 'pointer' : 'default',
-                        margin: '3px',
-                        bgcolor: isAnswered ? 'success.main' : 'action.disabledBackground',
-                        color: isAnswered ? 'success.contrastText' : 'text.primary',
-                        border: isCurrent ? '3px solid' : 'none',
-                        borderColor: 'primary.main',
-                        opacity: allowBackNavigation ? 1 : 0.7,
-                      }}
-                      onClick={() => allowBackNavigation && onJumpToQuestion(index)}
-                    >
-                      {questionNumber}
-                    </Avatar>
-                  );
-                })}
-              </Stack>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-    </>
+      )}
+    </Box>
   );
 };
 

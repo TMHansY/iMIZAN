@@ -21,6 +21,7 @@ import {
 } from 'src/slices/examApiSlice';
 import { toast } from 'react-toastify';
 import { uploadcareClient } from '../../../utils/uploadcareClient';
+import { getYouTubeEmbedUrl } from '../../../utils/youtube';
 
 const AddQuestionForm = () => {
   const [questions, setQuestions] = useState([]);
@@ -29,6 +30,7 @@ const AddQuestionForm = () => {
   const [correctOptions, setCorrectOptions] = useState([false, false, false, false]);
   const [selectedExamId, setSelectedExamId] = useState('');
   const [imageUrl, setImageUrl] = useState(null);
+  const [videoUrl, setVideoUrl] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleOptionChange = (index) => {
@@ -77,6 +79,7 @@ const AddQuestionForm = () => {
   }, [selectedExamId]);
 
   const selectedExam = examsData?.find((exam) => exam.examId === selectedExamId);
+  const embeddedVideoUrl = getYouTubeEmbedUrl(videoUrl);
   const questionLimit = selectedExam?.totalQuestions || 0;
   const existingCount = existingQuestionsData?.length || 0;
   const totalAdded = existingCount + questions.length;
@@ -102,6 +105,11 @@ const AddQuestionForm = () => {
       return;
     }
 
+    if (videoUrl && !getYouTubeEmbedUrl(videoUrl)) {
+      swal('', 'Enter a valid YouTube video link or leave the video field empty.', 'error');
+      return;
+    }
+
     const newQuestionObj = {
       question: newQuestion,
       options: newOptions.map((option, index) => ({
@@ -110,6 +118,7 @@ const AddQuestionForm = () => {
       })),
       examId: selectedExamId,
       imageUrl: imageUrl,
+      videoUrl,
     };
 
     try {
@@ -122,6 +131,7 @@ const AddQuestionForm = () => {
       setNewOptions(['', '', '', '']);
       setCorrectOptions([false, false, false, false]);
       setImageUrl(null);
+      setVideoUrl('');
     } catch (err) {
       swal('', 'Failed to create question. Please try again.', 'error');
     }
@@ -240,6 +250,37 @@ const AddQuestionForm = () => {
           </Box>
         )}
       </Box>
+
+      <TextField
+        label="YouTube video link (optional)"
+        placeholder="https://www.youtube.com/watch?v=..."
+        value={videoUrl}
+        onChange={(event) => setVideoUrl(event.target.value)}
+        helperText="Students can play the video directly in the exam. YouTube, youtu.be, and Shorts links are supported."
+        fullWidth
+        sx={{ mb: 2 }}
+      />
+      {embeddedVideoUrl && (
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: 480,
+            aspectRatio: '16 / 9',
+            mb: 2,
+            bgcolor: 'common.black',
+          }}
+        >
+          <iframe
+            title="Video preview"
+            src={embeddedVideoUrl}
+            width="100%"
+            height="100%"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            referrerPolicy="strict-origin-when-cross-origin"
+            style={{ border: 0, display: 'block' }}
+          />
+        </Box>
+      )}
 
       <RadioGroup
         value={correctOptions.findIndex((v) => v)}

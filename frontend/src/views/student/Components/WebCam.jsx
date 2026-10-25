@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   prepareProctoringModels,
   FACE_DETECTOR_OPTIONS,
@@ -8,7 +8,7 @@ import { startDetectionLoop } from '../../../utils/detectionLoop';
 import Webcam from 'react-webcam';
 import useTabInactivity from '../../../hooks/useTabInactivity';
 import { drawRect } from './utilities';
-import { Box, Card } from '@mui/material';
+import { Box, Card, Chip, Stack, Typography } from '@mui/material';
 import { toast } from 'react-toastify';
 import { uploadcareClient as client } from '../../../utils/uploadcareClient';
 
@@ -19,14 +19,35 @@ const LOOK_AWAY_THRESHOLD = 0.16;
 // violation (filters out momentary flickers / quick glances).
 const FACE_ISSUE_SUSTAIN_MS = 3000;
 
-export default function Home({ cheatingLog, incrementViolation, updateViolation }) {
+export default function Home({
+  cheatingLog,
+  incrementViolation,
+  updateViolation,
+  onCameraAccessLost,
+}) {
   const webcamRef = useRef(null);
   const activeRef = useRef(true);
   const canvasRef = useRef(null);
-  const callbacks = useRef({ incrementViolation });
-  callbacks.current = { incrementViolation };
+  const callbacks = useRef({ incrementViolation, onCameraAccessLost });
+  callbacks.current = { incrementViolation, onCameraAccessLost };
   const lastDetectionTime = useRef({});
   const faceIssueStartRef = useRef(null);
+  const [cameraStatus, setCameraStatus] = useState('checking');
+  const [mediaStream, setMediaStream] = useState(null);
+  const cameraLossReported = useRef(false);
+
+  useEffect(() => {
+    const tracks = mediaStream?.getVideoTracks?.() || [];
+    const handleTrackEnded = () => {
+      if (!activeRef.current || cameraLossReported.current) return;
+      cameraLossReported.current = true;
+      setCameraStatus('lost');
+      callbacks.current.onCameraAccessLost?.();
+    };
+
+    tracks.forEach((track) => track.addEventListener('ended', handleTrackEnded));
+    return () => tracks.forEach((track) => track.removeEventListener('ended', handleTrackEnded));
+  }, [mediaStream]);
 
   const captureScreenshotAndUpload = async (type, detectedAt = new Date()) => {
     try {
@@ -117,6 +138,7 @@ export default function Home({ cheatingLog, incrementViolation, updateViolation 
       webcamRef.current.video.videoWidth === 0 ||
       webcamRef.current.video.videoHeight === 0
     ) {
+      setCameraStatus('checking');
       return;
     }
 
@@ -164,6 +186,7 @@ export default function Home({ cheatingLog, incrementViolation, updateViolation 
       if (!isActive()) return;
 
       const notFacingScreen = !faceResult || isLookingAway(faceResult.landmarks);
+      setCameraStatus(notFacingScreen ? 'needs-attention' : 'active');
 
       if (notFacingScreen) {
         if (faceIssueStartRef.current === null) {
@@ -176,6 +199,7 @@ export default function Home({ cheatingLog, incrementViolation, updateViolation 
         faceIssueStartRef.current = null;
       }
     } catch (error) {
+      setCameraStatus('checking');
       console.error('Error during face detection:', error);
     }
   };
@@ -215,8 +239,77 @@ export default function Home({ cheatingLog, incrementViolation, updateViolation 
   });
 
   return (
-    <Box>
-      <Card variant="outlined" sx={{ position: 'relative', width: '100%', height: '100%' }}>
+    <Card
+      variant="outlined"
+      sx={{
+        position: 'relative',
+        width: { xs: '100%', sm: 300 },
+        height: 180,
+        mx: { xs: 0, sm: 'auto' },
+        overflow: 'hidden',
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 20,
+          px: 1,
+          py: 0.75,
+          bgcolor: 'rgba(0, 0, 0, 0.58)',
+          backdropFilter: 'blur(4px)',
+        }}
+      >
+        <Box>
+          <Typography variant="caption" fontWeight={700} display="block" color="common.white">
+            Camera monitoring
+          </Typography>
+          <Typography
+            variant="caption"
+            color={cameraStatus === 'needs-attention' ? 'warning.light' : 'grey.200'}
+            sx={{ display: 'block', maxWidth: 190, lineHeight: 1.25 }}
+          >
+            {cameraStatus === 'needs-attention'
+              ? 'Camera view obstructed — adjust your position.'
+              : 'Keep your face visible throughout the exam.'}
+          </Typography>
+        </Box>
+        <Chip
+          size="small"
+          color={
+            cameraStatus === 'active'
+              ? 'success'
+              : cameraStatus === 'needs-attention'
+              ? 'warning'
+              : cameraStatus === 'lost'
+              ? 'error'
+              : 'default'
+          }
+          label={
+            cameraStatus === 'active'
+              ? 'Active'
+              : cameraStatus === 'needs-attention'
+              ? 'Adjust view'
+              : cameraStatus === 'lost'
+              ? 'Access lost'
+              : 'Checking'
+          }
+          sx={{ height: 24, '& .MuiChip-label': { px: 0.75 } }}
+        />
+      </Stack>
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          bgcolor: 'common.black',
+        }}
+      >
         <Webcam
           ref={webcamRef}
           audio={false}
@@ -227,11 +320,18 @@ export default function Home({ cheatingLog, incrementViolation, updateViolation 
             height: 480,
             facingMode: 'user',
           }}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
+          onUserMedia={(stream) => {
+            cameraLossReported.current = false;
+            setMediaStream(stream);
+            setCameraStatus('checking');
           }}
+          onUserMediaError={() => {
+            if (cameraLossReported.current) return;
+            cameraLossReported.current = true;
+            setCameraStatus('lost');
+            callbacks.current.onCameraAccessLost?.();
+          }}
+          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }}
         />
         <canvas
           ref={canvasRef}
@@ -242,10 +342,11 @@ export default function Home({ cheatingLog, incrementViolation, updateViolation 
             width: '100%',
             height: '100%',
             zIndex: 10,
+            pointerEvents: 'none',
           }}
         />
-      </Card>
-    </Box>
+      </Box>
+    </Card>
   );
 }
 

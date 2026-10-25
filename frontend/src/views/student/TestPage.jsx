@@ -29,10 +29,20 @@ const TestPage = () => {
   const { answers, currentQuestionIndex, proctoringLog: cheatingLog } = session.progress;
   const { data: userExamdata, isLoading: isExamsLoading } = useGetExamsQuery();
   const { userInfo } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
   const selectedExam = userExamdata?.find((exam) => exam.examId === examId);
   const [questions, setQuestions] = useState([]);
   const { data, isLoading } = useGetQuestionsQuery(examId);
   const handleTestSubmission = session.submit;
+  const handleCameraAccessLost = async () => {
+    if (session.isSubmitting || session.isFinalizing) return;
+    toast.error('Camera access was lost. Returning to your exams…');
+    const saved = await session.forceLeave();
+    if (!saved) {
+      toast.warning('Your latest progress is stored locally and will be restored when you resume.');
+    }
+    navigate('/exam', { replace: true });
+  };
   const setCurrentQuestionIndex = (change) =>
     session.update((prev) => ({
       ...prev,
@@ -60,8 +70,6 @@ const TestPage = () => {
         ),
       },
     }));
-  const navigate = useNavigate();
-
   useEffect(() => {
     if (session.submitted) {
       toast.success('Test submitted successfully!');
@@ -169,7 +177,14 @@ const TestPage = () => {
       <Box pt="3rem">
         <Grid container spacing={3}>
           <Grid item xs={12} md={7} lg={7}>
-            <BlankCard>
+            <BlankCard
+              sx={{
+                border: '2px solid',
+                borderColor: 'primary.main',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
               <Box
                 width="100%"
                 minHeight="400px"
@@ -212,8 +227,9 @@ const TestPage = () => {
               <Grid item xs={12}>
                 <BlankCard>
                   <Box
-                    maxHeight="300px"
                     sx={{
+                      height: { xs: 'auto', md: 300 },
+                      maxHeight: 300,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'start',
@@ -239,20 +255,13 @@ const TestPage = () => {
               </Grid>
               <Grid item xs={12}>
                 <BlankCard>
-                  <Box
-                    width="300px"
-                    maxHeight="180px"
-                    boxShadow={3}
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="start"
-                    justifyContent="center"
-                  >
+                  <Box sx={{ width: '100%', p: { xs: 1.5, sm: 2 } }}>
                     {session.timeLeft > 0 && !session.isFinalizing && (
                       <WebCam
                         cheatingLog={cheatingLog}
                         incrementViolation={incrementViolation}
                         updateViolation={updateViolation}
+                        onCameraAccessLost={handleCameraAccessLost}
                       />
                     )}
                   </Box>
