@@ -100,9 +100,24 @@ const CourseEnrollments = () => {
     }
   };
 
+  const handleSectionChange = async (enrollmentId, sectionId) => {
+    if (actionPending.current) return;
+    actionPending.current = true;
+    setSaving(true);
+    try {
+      await axiosInstance.put(`/api/enrollments/${enrollmentId}/section`, { sectionId }, { withCredentials: true });
+      toast.success('Student section updated');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update student section');
+    } finally {
+      await fetchEnrollments(selectedCourseId);
+      actionPending.current = false;
+      setSaving(false);
+    }
+  };
+
   const handleBulkApprove = async () => {
-    if (actionPending.current || selectedIds.length === 0 || selectedIds.length > remainingPlaces)
-      return;
+    if (actionPending.current || selectedIds.length === 0 || !canBulkApprove) return;
     actionPending.current = true;
     setSaving(true);
     let approvedCount = 0;
@@ -130,10 +145,21 @@ const CourseEnrollments = () => {
   const selectedCourse = courses.find((c) => c.courseId === selectedCourseId);
   const pending = enrollments.filter((e) => e.status === 'pending');
   const approved = enrollments.filter((e) => e.status === 'approved');
-  const atLimit = selectedCourse && approved.length >= selectedCourse.studentLimit;
-  const remainingPlaces = selectedCourse
-    ? Math.max(0, selectedCourse.studentLimit - approved.length)
-    : 0;
+  const sectionCounts = (sectionId) => approved.filter((item) => item.sectionId === sectionId).length;
+  const canApprove = (enrollment) => {
+    const section = selectedCourse?.sections?.find((item) => item.sectionId === enrollment.sectionId);
+    return section && sectionCounts(section.sectionId) < section.studentLimit;
+  };
+  const canBulkApprove = (() => {
+    const selected = selectedIds.map((id) => pending.find((item) => item._id === id));
+    if (selected.some((item) => !item)) return false;
+    const counts = {};
+    selected.forEach((item) => { counts[item.sectionId] = (counts[item.sectionId] || 0) + 1; });
+    return Object.entries(counts).every(([sectionId, count]) => {
+      const section = selectedCourse?.sections?.find((item) => item.sectionId === sectionId);
+      return section && sectionCounts(sectionId) + count <= section.studentLimit;
+    });
+  })();
 
   const toggleSelected = (id) => {
     setSelectedIds((ids) =>
@@ -185,20 +211,11 @@ const CourseEnrollments = () => {
         <Stack spacing={3}>
           {selectedCourse && (
             <DashboardCard>
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                Enrolled: {approved.length} / {selectedCourse.studentLimit}
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={Math.min((approved.length / selectedCourse.studentLimit) * 100, 100)}
-                color={atLimit ? 'error' : 'primary'}
-              />
-              {atLimit && (
-                <Typography variant="caption" color="error" display="block" mt={1}>
-                  This course is at its student limit. New approvals are blocked until the limit is
-                  increased or a student is removed.
-                </Typography>
-              )}
+              <Stack spacing={1}>{(selectedCourse.sections || []).map((section) => <Box key={section.sectionId}>
+                <Typography variant="body2" color="text.secondary" mb={0.5}>{section.name}: {sectionCounts(section.sectionId)} / {section.studentLimit} enrolled</Typography>
+                <LinearProgress variant="determinate" value={Math.min((sectionCounts(section.sectionId) / section.studentLimit) * 100, 100)} color={sectionCounts(section.sectionId) >= section.studentLimit ? 'error' : 'primary'} />
+              </Box>)}</Stack>
+              {(selectedCourse.sections || []).length === 0 && <Typography color="text.secondary">An admin needs to create sections before students can enroll.</Typography>}
             </DashboardCard>
           )}
 
@@ -238,18 +255,15 @@ const CourseEnrollments = () => {
                     variant="contained"
                     color="success"
                     disabled={
-                      saving || selectedIds.length === 0 || selectedIds.length > remainingPlaces
+                      saving || selectedIds.length === 0 || !canBulkApprove
                     }
                     onClick={handleBulkApprove}
                   >
                     {saving ? 'Processing…' : `Approve Selected (${selectedIds.length})`}
                   </Button>
                 </Stack>
-                {selectedIds.length > remainingPlaces && (
-                  <Typography variant="body2" color="error" mb={1} role="status">
-                    Only {remainingPlaces} place{remainingPlaces === 1 ? '' : 's'} available. Select
-                    fewer students or ask an admin to increase the course limit.
-                  </Typography>
+                {!canBulkApprove && selectedIds.length > 0 && (
+                  <Typography variant="body2" color="error" mb={1} role="status">One or more selected sections are full. Reassign the student or ask an admin to increase the section limit.</Typography>
                 )}
                 <List disablePadding>
                   {pending.map((enrollment, index) => (
@@ -273,12 +287,18 @@ const CourseEnrollments = () => {
                             enrollment.student?.idNumber || 'No ID on file'
                           }`}
                         />
+                        <FormControl size="small" sx={{ minWidth: 140 }} disabled={saving}>
+                          <InputLabel id={`pending-section-${enrollment._id}`}>Section</InputLabel>
+                          <Select labelId={`pending-section-${enrollment._id}`} label="Section" value={enrollment.sectionId || ''} onChange={(e) => handleSectionChange(enrollment._id, e.target.value)}>
+                            {(selectedCourse?.sections || []).map((section) => <MenuItem key={section.sectionId} value={section.sectionId}>{section.name}</MenuItem>)}
+                          </Select>
+                        </FormControl>
                         <Stack direction="row" spacing={1} sx={{ ml: 'auto' }}>
                           <Button
                             size="small"
                             variant="contained"
                             color="success"
-                            disabled={saving || atLimit}
+                            disabled={saving || !canApprove(enrollment)}
                             onClick={() => handleDecision(enrollment._id, 'approve')}
                           >
                             Approve
@@ -312,8 +332,14 @@ const CourseEnrollments = () => {
                     <ListItem sx={{ py: 1 }}>
                       <ListItemText
                         primary={enrollment.student?.name}
-                        secondary={enrollment.student?.email}
+                        secondary={`${enrollment.student?.email} · ${selectedCourse?.sections?.find((section) => section.sectionId === enrollment.sectionId)?.name || 'Section unavailable'}`}
                       />
+                      <FormControl size="small" sx={{ minWidth: 140 }} disabled={saving}>
+                        <InputLabel id={`roster-section-${enrollment._id}`}>Section</InputLabel>
+                        <Select labelId={`roster-section-${enrollment._id}`} label="Section" value={enrollment.sectionId || ''} onChange={(e) => handleSectionChange(enrollment._id, e.target.value)}>
+                          {(selectedCourse?.sections || []).map((section) => <MenuItem key={section.sectionId} value={section.sectionId}>{section.name}</MenuItem>)}
+                        </Select>
+                      </FormControl>
                       <Chip label="Enrolled" color="success" size="small" />
                     </ListItem>
                   </React.Fragment>

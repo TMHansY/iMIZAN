@@ -5,6 +5,7 @@ import {
   createExam,
   DeleteExamById,
   getExams,
+  cloneExam,
   updateExam,
 } from "../controllers/examController.js";
 import {
@@ -23,6 +24,10 @@ examRoutes.route("/exam/questions").post(protect, createQuestion);
 examRoutes.route("/exam/questions/:examId").get(protect, getQuestionsByExamId);
 examRoutes.route("/cheatingLogs/:examId").get(protect, getCheatingLogsByExamId);
 examRoutes.route("/cheatingLogs/").post(protect, saveCheatingLog);
-examRoutes.route("/exam/:examId").post(protect, DeleteExamById).put(protect, updateExam);
+examRoutes.route("/exam/:examId/clone").post(protect, cloneExam);
+examRoutes
+  .route("/exam/:examId")
+  .post(protect, DeleteExamById)
+  .put(protect, updateExam);
 
 export default examRoutes;

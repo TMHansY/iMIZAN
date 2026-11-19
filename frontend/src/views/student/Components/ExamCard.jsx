@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 import { IconButton, Stack, Box, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import DeleteIcon from '../../lecturer/components/DeleteIcon';
+import CloneExamButton from '../../lecturer/components/CloneExamButton';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import EditIcon from '@mui/icons-material/Edit';
@@ -23,7 +24,7 @@ const pickFromId = (id, arr) => {
 };
 
 export default function ExamCard({ exam }) {
-  const { examName, duration, totalQuestions, examId } = exam;
+  const { examName, duration, totalQuestions, examId, courseId } = exam;
   const { userInfo } = useSelector((state) => state.auth);
   const isLecturer = userInfo?.role === 'lecturer';
 
@@ -90,6 +91,7 @@ export default function ExamCard({ exam }) {
                 >
                   <EditIcon fontSize="small" />
                 </IconButton>
+                <CloneExamButton examId={examId} examName={examName} sourceCourseId={courseId} />
                 <DeleteIcon examId={examId} />
               </Stack>
             )}

@@ -6,6 +6,7 @@ import {
   getEnrollmentsForCourse,
   approveEnrollment,
   rejectEnrollment,
+  changeEnrollmentSection,
 } from "../controllers/enrollmentController.js";
 
 const enrollmentRoutes = express.Router();
@@ -17,5 +18,6 @@ enrollmentRoutes.get("/mine", getMyEnrollments);
 enrollmentRoutes.get("/course/:courseId", getEnrollmentsForCourse);
 enrollmentRoutes.put("/:id/approve", approveEnrollment);
 enrollmentRoutes.put("/:id/reject", rejectEnrollment);
+enrollmentRoutes.put("/:id/section", changeEnrollmentSection);
 
 export default enrollmentRoutes;

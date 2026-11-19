@@ -14,12 +14,16 @@ const applyToCourse = asyncHandler(async (req, res) => {
     throw new Error("Only students can apply to courses");
   }
 
-  const { courseId } = req.body;
+  const { courseId, sectionId } = req.body;
 
   const course = await Course.findOne({ courseId });
   if (!course) {
     res.status(404);
     throw new Error("Course not found");
+  }
+  if (!sectionId || !course.sections.some((section) => section.sectionId === sectionId)) {
+    res.status(400);
+    throw new Error("Choose a valid section for this course");
   }
 
   const existing = await Enrollment.findOne({ courseId, student: req.user._id });
@@ -36,6 +40,7 @@ const applyToCourse = asyncHandler(async (req, res) => {
 
   const enrollment = await Enrollment.create({
     courseId,
+    sectionId,
     student: req.user._id,
     status: "pending",
   });
@@ -96,15 +101,18 @@ const approveEnrollment = asyncHandler(async (req, res) => {
     throw new Error("Not authorized to manage enrollments for this course");
   }
 
+  const section = course.sections.find((item) => item.sectionId === enrollment.sectionId);
+  if (!section) { res.status(400); throw new Error("The selected section is no longer available. Reassign the student before approving."); }
   const approvedCount = await Enrollment.countDocuments({
     courseId: course.courseId,
+    sectionId: enrollment.sectionId,
     status: "approved",
   });
 
-  if (approvedCount >= course.studentLimit) {
+  if (approvedCount >= section.studentLimit) {
     res.status(400);
     throw new Error(
-      `This course is at its student limit (${course.studentLimit}). Increase the limit or remove a student before approving more.`
+      `Section ${section.name} is at its student limit (${section.studentLimit}). Reassign a student or ask an admin to increase the limit.`
     );
   }
 
@@ -112,6 +120,23 @@ const approveEnrollment = asyncHandler(async (req, res) => {
   await enrollment.save();
 
   res.status(200).json(enrollment);
+});
+
+const changeEnrollmentSection = asyncHandler(async (req, res) => {
+  const enrollment = await Enrollment.findById(req.params.id);
+  if (!enrollment) { res.status(404); throw new Error("Enrollment not found"); }
+  const course = await Course.findOne({ courseId: enrollment.courseId });
+  if (!course) { res.status(404); throw new Error("Course not found"); }
+  if (!isCourseLecturer(course, req.user)) { res.status(403); throw new Error("Not authorized to manage enrollments for this course"); }
+  const section = course.sections.find((item) => item.sectionId === req.body.sectionId);
+  if (!section) { res.status(400); throw new Error("Choose a valid section for this course"); }
+  if (enrollment.status === "approved") {
+    const count = await Enrollment.countDocuments({ courseId: course.courseId, sectionId: section.sectionId, status: "approved", _id: { $ne: enrollment._id } });
+    if (count >= section.studentLimit) { res.status(400); throw new Error(`Section ${section.name} is at its student limit (${section.studentLimit})`); }
+  }
+  enrollment.sectionId = section.sectionId;
+  await enrollment.save();
+  res.json(enrollment);
 });
 
 // @desc    Reject a student's enrollment application
@@ -141,4 +166,4 @@ const rejectEnrollment = asyncHandler(async (req, res) => {
   res.status(200).json(enrollment);
 });
 
-export { applyToCourse, getMyEnrollments, getEnrollmentsForCourse, approveEnrollment, rejectEnrollment };
+export { applyToCourse, getMyEnrollments, getEnrollmentsForCourse, approveEnrollment, rejectEnrollment, changeEnrollmentSection };

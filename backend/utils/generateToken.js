@@ -16,7 +16,9 @@ const generateToken = (res, userId, sessionVersion = 0) => {
     maxAge: SESSION_DURATION_MS,
   });
 
-  res.set("X-Session-Expires-At", expiresAt.toISOString());
+  if (typeof res.set === "function") {
+    res.set("X-Session-Expires-At", expiresAt.toISOString());
+  }
   return expiresAt.toISOString();
 };
 

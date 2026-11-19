@@ -26,6 +26,11 @@ const courseSchema = mongoose.Schema(
       required: true,
       default: 30,
     },
+    sections: [{
+      sectionId: { type: String, required: true },
+      name: { type: String, required: true, trim: true },
+      studentLimit: { type: Number, default: 30, min: 1 },
+    }],
     courseId: {
       type: String,
       default: uuidv4,

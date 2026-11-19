@@ -6,6 +6,9 @@ const enrollmentSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    // Optional for pre-section enrollments already stored in the database.
+    // New applications are validated by the controller and must choose one.
+    sectionId: { type: String, default: "" },
     student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

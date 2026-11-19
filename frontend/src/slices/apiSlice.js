@@ -24,7 +24,7 @@ const baseQueryWithSession = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   baseQuery: baseQueryWithSession,
 
-  tagTypes: ['User'],
+  tagTypes: ['User', 'Exam'],
   refetchOnMountOrArgChange: true,
   endpoints: (builder) => ({}),
 });

@@ -85,7 +85,7 @@ const Login = () => {
               mt={3}
             >
               <Typography color="textSecondary" variant="h6" fontWeight="500">
-                New to iTKC?
+                New to iMIZAN?
               </Typography>
               <Typography
                 component={Link}

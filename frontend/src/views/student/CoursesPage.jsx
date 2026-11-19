@@ -1,7 +1,7 @@
 import PageHeading from 'src/components/shared/PageHeading';
 import ContentSkeleton from 'src/components/shared/ContentSkeleton';
 import React, { useEffect, useState } from 'react';
-import { Grid, Card, CardContent, Typography, Button, Chip } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Button, Chip, FormControl, InputLabel, Select, MenuItem, Stack } from '@mui/material';
 import { toast } from 'react-toastify';
 import PageContainer from 'src/components/container/PageContainer';
 import axiosInstance from '../../axios';
@@ -10,6 +10,7 @@ const CoursesPage = () => {
   const [courses, setCourses] = useState([]);
   const [myEnrollments, setMyEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSections, setSelectedSections] = useState({});
 
   const fetchData = async () => {
     try {
@@ -33,7 +34,7 @@ const CoursesPage = () => {
 
   const handleApply = async (courseId) => {
     try {
-      await axiosInstance.post('/api/enrollments', { courseId }, { withCredentials: true });
+      await axiosInstance.post('/api/enrollments', { courseId, sectionId: selectedSections[courseId] }, { withCredentials: true });
       toast.success('Application submitted');
       fetchData();
     } catch (err) {
@@ -95,19 +96,23 @@ const CoursesPage = () => {
                     </Typography>
 
                     {status === 'approved' ? (
-                      <Chip label="Enrolled" color="success" size="small" />
+                      <Chip label={`Enrolled · ${course.sections?.find((s) => s.sectionId === myEnrollments.find((e) => e.courseId === course.courseId)?.sectionId)?.name || 'Section unavailable'}`} color="success" size="small" />
                     ) : status === 'pending' ? (
-                      <Chip label="Application Pending" color="warning" size="small" />
+                      <Chip label={`Pending · ${course.sections?.find((s) => s.sectionId === myEnrollments.find((e) => e.courseId === course.courseId)?.sectionId)?.name || 'Section unavailable'}`} color="warning" size="small" />
                     ) : status === 'rejected' ? (
                       <Chip label="Application Rejected" color="error" size="small" />
                     ) : (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={() => handleApply(course.courseId)}
-                      >
-                        Apply to Join
-                      </Button>
+                      <Stack spacing={1} sx={{ width: '100%' }}>
+                        {course.sections?.length ? (
+                          <FormControl size="small" fullWidth>
+                            <InputLabel id={`section-${course.courseId}`}>Choose section</InputLabel>
+                            <Select labelId={`section-${course.courseId}`} label="Choose section" value={selectedSections[course.courseId] || ''} onChange={(e) => setSelectedSections({ ...selectedSections, [course.courseId]: e.target.value })}>
+                              {course.sections.map((section) => <MenuItem key={section.sectionId} value={section.sectionId}>{section.name} · {section.studentLimit} places</MenuItem>)}
+                            </Select>
+                          </FormControl>
+                        ) : <Typography variant="caption" color="text.secondary">Sections are not available yet. Please check back later.</Typography>}
+                        <Button size="small" variant="contained" disabled={!selectedSections[course.courseId] || !course.sections?.length} onClick={() => handleApply(course.courseId)}>Enroll in Course</Button>
+                      </Stack>
                     )}
                   </CardContent>
                 </Card>

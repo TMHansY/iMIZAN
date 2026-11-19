@@ -3,6 +3,7 @@ import Course from "../models/courseModel.js";
 import User from "../models/userModel.js";
 import Exam from "../models/examModel.js";
 import Enrollment from "../models/enrollmentModel.js";
+import { v4 as uuidv4 } from "uuid";
 
 // @desc    Get all courses
 // @route   GET /api/courses
@@ -148,6 +149,35 @@ const getMyCourses = asyncHandler(async (req, res) => {
   res.status(200).json(courses);
 });
 
+const addCourseSection = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") { res.status(403); throw new Error("Not authorized"); }
+  const course = await Course.findOne({ courseId: req.params.courseId });
+  if (!course) { res.status(404); throw new Error("Course not found"); }
+  const name = String(req.body.name || "").trim();
+  const studentLimit = Number(req.body.studentLimit || course.studentLimit);
+  if (!name || !Number.isInteger(studentLimit) || studentLimit < 1) { res.status(400); throw new Error("Enter a section name and a valid student limit"); }
+  if (course.sections.some((section) => section.name.toLowerCase() === name.toLowerCase())) { res.status(400); throw new Error("A section with this name already exists"); }
+  course.sections.push({ sectionId: uuidv4(), name, studentLimit });
+  await course.save();
+  res.status(201).json(course.sections);
+});
+
+const updateCourseSection = asyncHandler(async (req, res) => {
+  if (req.user.role !== "admin") { res.status(403); throw new Error("Not authorized"); }
+  const course = await Course.findOne({ courseId: req.params.courseId });
+  if (!course) { res.status(404); throw new Error("Course not found"); }
+  const section = course.sections.find((item) => item.sectionId === req.params.sectionId);
+  if (!section) { res.status(404); throw new Error("Section not found"); }
+  const name = String(req.body.name || "").trim();
+  const studentLimit = Number(req.body.studentLimit);
+  if (!name || !Number.isInteger(studentLimit) || studentLimit < 1) { res.status(400); throw new Error("Enter a section name and a valid student limit"); }
+  if (course.sections.some((item) => item !== section && item.name.toLowerCase() === name.toLowerCase())) { res.status(400); throw new Error("A section with this name already exists"); }
+  section.name = name;
+  section.studentLimit = studentLimit;
+  await course.save();
+  res.json(course.sections);
+});
+
 export {
   getCourses,
   createCourse,
@@ -155,4 +185,6 @@ export {
   deleteCourse,
   getLecturers,
   getMyCourses,
+  addCourseSection,
+  updateCourseSection,
 };
