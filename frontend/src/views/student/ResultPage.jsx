@@ -55,6 +55,8 @@ const ResultPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedExam, setSelectedExam] = useState('all');
   const [exams, setExams] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [sectionFilter, setSectionFilter] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [selectedResultIds, setSelectedResultIds] = useState([]);
   const [visibilitySaving, setVisibilitySaving] = useState(false);
@@ -77,10 +79,12 @@ const ResultPage = () => {
         setExams(examsResponse.data);
 
         if (userInfo?.role === 'lecturer') {
-          const resultsResponse = await axiosInstance.get('/api/users/results/all', {
-            withCredentials: true,
-          });
+          const [resultsResponse, coursesResponse] = await Promise.all([
+            axiosInstance.get('/api/users/results/all', { withCredentials: true }),
+            axiosInstance.get('/api/courses/mine', { withCredentials: true }),
+          ]);
           setResults(resultsResponse.data.data);
+          setCourses(coursesResponse.data);
         } else {
           const resultsResponse = await axiosInstance.get('/api/users/results/user', {
             withCredentials: true,
@@ -172,6 +176,7 @@ const ResultPage = () => {
 
   const handleExamChange = (examId) => {
     setSelectedExam(examId);
+    setSectionFilter('all');
     setSelectedResultIds([]);
   };
 
@@ -275,8 +280,22 @@ const ResultPage = () => {
       result.userId?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       examName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesExam = selectedExam === 'all' || result.examId === selectedExam;
-    return matchesSearch && matchesExam;
+    const matchesSection =
+      sectionFilter === 'all' ||
+      (sectionFilter === 'unassigned' ? !result.sectionId : result.sectionId === sectionFilter);
+    return matchesSearch && matchesExam && matchesSection;
   });
+
+  const sectionOptions = (selectedExam === 'all'
+    ? courses
+    : courses.filter((course) => course.courseId === exams.find((exam) => exam.examId === selectedExam)?.courseId)
+  ).flatMap((course) => (course.sections || []).map((section) => ({
+    ...section,
+    label: selectedExam === 'all' ? `${course.courseCode} — ${section.name}` : section.name,
+  })));
+  const hasUnassignedResults = results.some((result) =>
+    (selectedExam === 'all' || result.examId === selectedExam) && !result.sectionId,
+  );
 
   const groupedResults = React.useMemo(() => {
     const groups = {};
@@ -531,6 +550,24 @@ const ResultPage = () => {
                   ))}
                 </Select>
               </FormControl>
+              <FormControl sx={{ minWidth: 200 }} disabled={visibilitySaving}>
+                <InputLabel id="lecturer-results-section-label">Select Section</InputLabel>
+                <Select
+                  labelId="lecturer-results-section-label"
+                  value={sectionFilter}
+                  onChange={(e) => {
+                    setSectionFilter(e.target.value);
+                    setSelectedResultIds([]);
+                  }}
+                  label="Select Section"
+                >
+                  <MenuItem value="all">All sections</MenuItem>
+                  {hasUnassignedResults && <MenuItem value="unassigned">Unassigned</MenuItem>}
+                  {sectionOptions.map((section) => (
+                    <MenuItem key={section.sectionId} value={section.sectionId}>{section.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               <TextField
                 label="Search Students"
                 disabled={visibilitySaving}
@@ -627,6 +664,7 @@ const ResultPage = () => {
                     <TableCell>Student Name</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Exam</TableCell>
+                    <TableCell>Section</TableCell>
                     <TableCell>Attempts</TableCell>
                     <TableCell>MCQ Score</TableCell>
                     <TableCell>Total Score</TableCell>
@@ -685,6 +723,7 @@ const ResultPage = () => {
                           <TableCell>{group.latest.userId?.name}</TableCell>
                           <TableCell>{group.latest.userId?.email}</TableCell>
                           <TableCell>{examName}</TableCell>
+                          <TableCell>{group.latest.sectionName || 'Unassigned'}</TableCell>
                           <TableCell>
                             {group.attempts.length > 1 ? (
                               <Chip
@@ -735,6 +774,7 @@ const ResultPage = () => {
                                   Attempt {attempt.attemptNumber} of {attempt.totalAttemptsForExam}
                                 </Typography>
                               </TableCell>
+                              <TableCell />
                               <TableCell />
                               <TableCell />
                               <TableCell>

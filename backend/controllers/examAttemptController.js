@@ -28,16 +28,19 @@ export const startOrResumeAttempt = asyncHandler(async (req, res) => {
   let attempt = await ExamAttempt.findOne({ examId, userId, status: 'active' });
   if (!attempt) {
     const now = new Date();
-    if (now < exam.liveDate || now >= exam.deadDate) {
-      res.status(403);
-      throw new Error('This exam is outside its availability window.');
-    }
-    if (
-      exam.courseId &&
-      !(await Enrollment.exists({ courseId: exam.courseId, student: userId, status: 'approved' }))
-    ) {
+    const enrollment = exam.courseId
+      ? await Enrollment.findOne({ courseId: exam.courseId, student: userId, status: 'approved' })
+      : null;
+    if (exam.courseId && !enrollment) {
       res.status(403);
       throw new Error('You must be enrolled in this course to take the exam.');
+    }
+    const sectionSchedule = exam.sectionSchedules?.find((item) => item.sectionId === enrollment?.sectionId);
+    const availableFrom = sectionSchedule?.liveDate || exam.liveDate;
+    const availableUntil = sectionSchedule?.deadDate || exam.deadDate;
+    if (now < availableFrom || now >= availableUntil) {
+      res.status(403);
+      throw new Error('This exam is outside its availability window.');
     }
     const [legacyCount, sessions] = await Promise.all([
       Result.countDocuments({ examId, userId, attemptId: { $exists: false } }),
@@ -58,7 +61,13 @@ export const startOrResumeAttempt = asyncHandler(async (req, res) => {
       try {
         attempt = await ExamAttempt.findOneAndUpdate(
           { examId, userId, status: 'active' },
-          { $setOnInsert: { slot, startedAt: now, expiresAt: attemptDeadline(exam, now) } },
+          {
+            $setOnInsert: {
+              slot,
+              startedAt: now,
+              expiresAt: attemptDeadline({ duration: exam.duration, deadDate: availableUntil }, now),
+            },
+          },
           { upsert: true, new: true, setDefaultsOnInsert: true },
         );
       } catch (error) {

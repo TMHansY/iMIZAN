@@ -107,11 +107,11 @@ const CoursesPage = () => {
                           <FormControl size="small" fullWidth>
                             <InputLabel id={`section-${course.courseId}`}>Choose section</InputLabel>
                             <Select labelId={`section-${course.courseId}`} label="Choose section" value={selectedSections[course.courseId] || ''} onChange={(e) => setSelectedSections({ ...selectedSections, [course.courseId]: e.target.value })}>
-                              {course.sections.map((section) => <MenuItem key={section.sectionId} value={section.sectionId}>{section.name} · {section.studentLimit} places</MenuItem>)}
+                              {course.sections.map((section) => <MenuItem key={section.sectionId} value={section.sectionId} disabled={section.placesLeft === 0}>{section.name} · {section.placesLeft ?? section.studentLimit} places left</MenuItem>)}
                             </Select>
                           </FormControl>
                         ) : <Typography variant="caption" color="text.secondary">Sections are not available yet. Please check back later.</Typography>}
-                        <Button size="small" variant="contained" disabled={!selectedSections[course.courseId] || !course.sections?.length} onClick={() => handleApply(course.courseId)}>Enroll in Course</Button>
+                        <Button size="small" variant="contained" disabled={!selectedSections[course.courseId] || !course.sections?.length || course.sections.find((section) => section.sectionId === selectedSections[course.courseId])?.placesLeft === 0} onClick={() => handleApply(course.courseId)}>Enroll in Course</Button>
                       </Stack>
                     )}
                   </CardContent>

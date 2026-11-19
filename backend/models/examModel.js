@@ -52,6 +52,11 @@ const examSchema = mongoose.Schema(
       type: Date,
       required: true,
     },
+    sectionSchedules: [{
+      sectionId: { type: String, required: true },
+      liveDate: { type: Date, required: true },
+      deadDate: { type: Date, required: true },
+    }],
     // Define examId field with UUID generation
     examId: {
       type: String,

@@ -1,13 +1,14 @@
-import { finalizeProctoringLog } from '../utils/examAttemptProgress.js';
 import ExamAttempt from '../models/examAttemptModel.js';
 import { countUsedAttempts } from './examAttemptController.js';
 import asyncHandler from 'express-async-handler';
 import Result from '../models/resultModel.js';
-import Question from '../models/quesModel.js';
 import Exam from '../models/examModel.js';
 import User from '../models/userModel.js';
 import CheatingLog from '../models/cheatingLogModel.js';
 import isExamOwner from '../utils/checkExamOwnership.js';
+import { finalizeExamAttempt } from '../services/finalizeExamAttempt.js';
+import Course from '../models/courseModel.js';
+import Enrollment from '../models/enrollmentModel.js';
 
 const PASS_THRESHOLD_PERCENTAGE = 50;
 
@@ -125,97 +126,21 @@ const saveResult = asyncHandler(async (req, res) => {
     throw new Error('Exam not found.');
   }
   const now = new Date();
-  // Freeze the last server-saved progress. Retrying submission cannot alter it.
-  let attempt = await ExamAttempt.findOneAndUpdate(
-    {
-      _id: attemptId,
+  // Freeze the last server-saved progress; retries use the same finalization path.
+  let result;
+  try {
+    result = await finalizeExamAttempt({
       examId,
+      attemptId,
       userId: req.user._id,
-      status: 'active',
-      finishedAt: { $exists: false },
-    },
-    { $set: { finishedAt: now } },
-    { new: true },
-  );
-  if (!attempt)
-    attempt = await ExamAttempt.findOne({
-      _id: attemptId,
-      examId,
-      userId: req.user._id,
-      finishedAt: { $exists: true },
+      finishedAt: now,
+      username: req.user.name,
+      email: req.user.email,
     });
-  if (!attempt) {
-    res.status(404);
-    throw new Error('Exam attempt not found.');
+  } catch (error) {
+    if (error.statusCode) res.status(error.statusCode);
+    throw error;
   }
-  const answers =
-    attempt.answers instanceof Map ? Object.fromEntries(attempt.answers) : attempt.answers;
-  const timeTakenSeconds = Math.max(
-    0,
-    Math.round(
-      (Math.min(new Date(attempt.finishedAt), new Date(attempt.expiresAt)) -
-        new Date(attempt.startedAt)) /
-        1000,
-    ),
-  );
-
-  // Get all questions for this exam to calculate marks
-  const questions = await Question.find({ examId });
-
-  // Calculate marks
-  let totalMarks = 0;
-  let correctAnswers = 0;
-
-  for (const question of questions) {
-    const userAnswer = answers[question._id.toString()];
-    if (userAnswer) {
-      const correctOption = question.options.find((opt) => opt.isCorrect);
-      if (correctOption && correctOption._id.toString() === userAnswer) {
-        totalMarks += question.ansmarks || 1;
-        correctAnswers++;
-      }
-    }
-  }
-
-  // Calculate percentage
-  const totalQuestions = questions.length;
-  const percentage = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-
-  await Promise.all([Result.init(), CheatingLog.init()]);
-  const result = await Result.findOneAndUpdate(
-    { attemptId: attempt._id },
-    {
-      $setOnInsert: {
-        attemptId: attempt._id,
-        examId,
-        userId: req.user._id,
-        answers,
-        totalMarks,
-        percentage,
-        timeTakenSeconds,
-        showToStudent: false,
-      },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
-  );
-  await CheatingLog.findOneAndUpdate(
-    { attemptId: attempt._id },
-    {
-      $setOnInsert: {
-        ...finalizeProctoringLog(
-          attempt.proctoringLog,
-          Math.min(new Date(attempt.finishedAt), new Date(attempt.expiresAt)),
-        ),
-        attemptId: attempt._id,
-        examId,
-        username: req.user.name,
-        email: req.user.email,
-      },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
-  );
-
-  await ExamAttempt.updateOne({ _id: attempt._id }, { $set: { status: 'submitted' } });
 
   res.status(201).json({
     success: true,
@@ -332,15 +257,32 @@ const getAllResults = asyncHandler(async (req, res) => {
 
   const ownedExams = await Exam.find({
     $or: [{ createdBy: req.user._id }, { createdBy: { $exists: false } }],
-  }).select('examId');
+  }).select('examId courseId');
   const ownedExamIds = ownedExams.map((e) => e.examId);
 
-  const results = await Result.find({ examId: { $in: ownedExamIds } })
+  const rawResults = await Result.find({ examId: { $in: ownedExamIds } })
     .populate('userId', 'name email')
     .sort({ createdAt: -1 });
+  const courseIds = [...new Set(ownedExams.map((exam) => exam.courseId).filter(Boolean))];
+  const studentIds = [...new Set(rawResults.map((result) => result.userId?._id?.toString()).filter(Boolean))];
+  const [courses, enrollments] = await Promise.all([
+    Course.find({ courseId: { $in: courseIds } }).select('courseId sections'),
+    Enrollment.find({ courseId: { $in: courseIds }, student: { $in: studentIds } }).select('courseId student sectionId'),
+  ]);
+  const courseById = new Map(courses.map((course) => [course.courseId, course]));
+  const examById = new Map(ownedExams.map((exam) => [exam.examId, exam]));
+  const enrollmentByCourseStudent = new Map(
+    enrollments.map((enrollment) => [`${enrollment.courseId}:${enrollment.student}`, enrollment]),
+  );
+  const results = attachAttemptNumbers(rawResults.map(attachStatus)).map((result) => {
+    const courseId = examById.get(result.examId)?.courseId;
+    const enrollment = enrollmentByCourseStudent.get(`${courseId}:${result.userId?._id}`);
+    const section = courseById.get(courseId)?.sections?.find((item) => item.sectionId === enrollment?.sectionId);
+    return { ...result, sectionId: enrollment?.sectionId || '', sectionName: section?.name || 'Unassigned' };
+  });
   res.status(200).json({
     success: true,
-    data: attachAttemptNumbers(results.map(attachStatus)),
+    data: results,
   });
 });
 

@@ -71,6 +71,7 @@ const EditExamPage = () => {
     initialValues: {
       examName: '',
       courseId: '',
+      sectionSchedules: [],
       totalQuestions: '',
       duration: '',
       liveDate: '',
@@ -99,6 +100,11 @@ const EditExamPage = () => {
       formik.setValues({
         examName: currentExam.examName || '',
         courseId: currentExam.courseId || '',
+        sectionSchedules: (currentExam.sectionSchedules || []).map((schedule) => ({
+          ...schedule,
+          liveDate: toDateTimeLocal(schedule.liveDate),
+          deadDate: toDateTimeLocal(schedule.deadDate),
+        })),
         totalQuestions: currentExam.totalQuestions || '',
         duration: currentExam.duration || '',
         liveDate: toDateTimeLocal(currentExam.liveDate),

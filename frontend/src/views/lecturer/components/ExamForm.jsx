@@ -22,6 +22,21 @@ const CreateExam = ({
   courses = [],
 }) => {
   const { values, errors, touched, handleChange, handleSubmit, setFieldValue } = formik;
+  const selectedCourse = courses.find((course) => course.courseId === values.courseId);
+
+  const setSectionSchedule = (sectionId, key, value) => {
+    const current = values.sectionSchedules || [];
+    const existing = current.find((item) => item.sectionId === sectionId) || {
+      sectionId,
+      liveDate: values.liveDate,
+      deadDate: values.deadDate,
+    };
+    const updated = { ...existing, [key]: value };
+    setFieldValue('sectionSchedules', [
+      ...current.filter((item) => item.sectionId !== sectionId),
+      updated,
+    ]);
+  };
 
   return (
     <>
@@ -53,7 +68,10 @@ const CreateExam = ({
             <Select
               value={values.courseId}
               label="Course"
-              onChange={(e) => setFieldValue('courseId', e.target.value)}
+              onChange={(e) => {
+                setFieldValue('courseId', e.target.value);
+                if (e.target.value !== values.courseId) setFieldValue('sectionSchedules', []);
+              }}
             >
               {courses.length === 0 ? (
                 <MenuItem value="" disabled>
@@ -190,6 +208,43 @@ const CreateExam = ({
             }}
           />
         </Stack>
+
+        {selectedCourse?.sections?.length > 0 && (
+          <Stack mb={3} spacing={2}>
+            <Typography variant="h6">Section availability</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Set different exam windows for each section. Students still use this same exam and question set.
+            </Typography>
+            {selectedCourse.sections.map((section) => {
+              const schedule = values.sectionSchedules?.find((item) => item.sectionId === section.sectionId);
+              const liveDate = schedule?.liveDate || values.liveDate;
+              const deadDate = schedule?.deadDate || values.deadDate;
+              return (
+                <Box key={section.sectionId} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                  <Typography fontWeight={600} mb={1}>{section.name}</Typography>
+                  <Stack spacing={2}>
+                    <CustomTextField
+                      label="Available from"
+                      type="datetime-local"
+                      fullWidth
+                      value={liveDate}
+                      onChange={(event) => setSectionSchedule(section.sectionId, 'liveDate', event.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                    <CustomTextField
+                      label="Available until"
+                      type="datetime-local"
+                      fullWidth
+                      value={deadDate}
+                      onChange={(event) => setSectionSchedule(section.sectionId, 'deadDate', event.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Stack>
+                </Box>
+              );
+            })}
+          </Stack>
+        )}
 
         <Button
           color="primary"

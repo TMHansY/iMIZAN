@@ -22,17 +22,26 @@ const getExams = asyncHandler(async (req, res) => {
     const approvedEnrollments = await Enrollment.find({
       student: req.user._id,
       status: "approved",
-    }).select("courseId");
+    }).select("courseId sectionId");
     const approvedCourseIds = approvedEnrollments.map((e) => e.courseId);
 
     // Students see exams for courses they're enrolled in, plus any
     // "legacy" exam that predates the course system (no courseId at all).
-    exams = await Exam.find({
+    const enrolledExams = await Exam.find({
       $or: [
         { courseId: { $in: approvedCourseIds } },
         { courseId: null },
         { courseId: { $exists: false } },
       ],
+    });
+    exams = enrolledExams.map((exam) => {
+      const enrollment = approvedEnrollments.find((item) => item.courseId === exam.courseId);
+      const schedule = exam.sectionSchedules?.find((item) => item.sectionId === enrollment?.sectionId);
+      if (!schedule) return exam;
+      const value = exam.toObject();
+      value.liveDate = schedule.liveDate;
+      value.deadDate = schedule.deadDate;
+      return value;
     });
   } else {
     // Admins see everything
@@ -58,6 +67,7 @@ const createExam = asyncHandler(async (req, res) => {
     randomizeQuestions,
     randomizeOptions,
     courseId,
+    sectionSchedules,
   } = req.body;
 
   if (!courseId) {
@@ -79,6 +89,8 @@ const createExam = asyncHandler(async (req, res) => {
     throw new Error("You are not assigned to this course");
   }
 
+  const validatedSchedules = validateSectionSchedules(sectionSchedules, course);
+
   const exam = new Exam({
     examName,
     totalQuestions,
@@ -91,6 +103,7 @@ const createExam = asyncHandler(async (req, res) => {
     randomizeQuestions,
     randomizeOptions,
     courseId,
+    sectionSchedules: validatedSchedules,
     createdBy: req.user._id,
   });
 
@@ -121,6 +134,7 @@ const updateExam = asyncHandler(async (req, res) => {
     randomizeQuestions,
     randomizeOptions,
     courseId,
+    sectionSchedules,
   } = req.body;
 
   const exam = await Exam.findOne({ examId });
@@ -135,6 +149,16 @@ const updateExam = asyncHandler(async (req, res) => {
     throw new Error("Not authorized to edit this exam");
   }
 
+  const targetCourseId = courseId || exam.courseId;
+  const targetCourse = targetCourseId ? await Course.findOne({ courseId: targetCourseId }) : null;
+  if (targetCourseId && !targetCourse) {
+    res.status(404);
+    throw new Error("Course not found");
+  }
+  const validatedSchedules = sectionSchedules === undefined
+    ? undefined
+    : validateSectionSchedules(sectionSchedules, targetCourse);
+
   if (courseId && courseId !== exam.courseId) {
     const course = await Course.findOne({ courseId });
     if (!course) {
@@ -148,6 +172,7 @@ const updateExam = asyncHandler(async (req, res) => {
       res.status(403);
       throw new Error("You are not assigned to this course");
     }
+    if (sectionSchedules === undefined) exam.sectionSchedules = [];
     exam.courseId = courseId;
   }
 
@@ -161,11 +186,35 @@ const updateExam = asyncHandler(async (req, res) => {
   exam.allowBackNavigation = allowBackNavigation ?? exam.allowBackNavigation;
   exam.randomizeQuestions = randomizeQuestions ?? exam.randomizeQuestions;
   exam.randomizeOptions = randomizeOptions ?? exam.randomizeOptions;
+  if (validatedSchedules !== undefined) exam.sectionSchedules = validatedSchedules;
 
   const updatedExam = await exam.save();
 
   res.status(200).json(updatedExam);
 });
+
+function validateSectionSchedules(schedules, course) {
+  if (schedules === undefined) return [];
+  if (!Array.isArray(schedules)) {
+    const error = new Error("Section schedules must be a list");
+    error.statusCode = 400;
+    throw error;
+  }
+  const validSectionIds = new Set((course?.sections || []).map((section) => section.sectionId));
+  const seen = new Set();
+  return schedules.map((schedule) => {
+    const liveDate = new Date(schedule.liveDate);
+    const deadDate = new Date(schedule.deadDate);
+    if (!validSectionIds.has(schedule.sectionId) || seen.has(schedule.sectionId) ||
+        !Number.isFinite(+liveDate) || !Number.isFinite(+deadDate) || liveDate >= deadDate) {
+      const error = new Error("Each section needs a valid start and end time, with the end after the start");
+      error.statusCode = 400;
+      throw error;
+    }
+    seen.add(schedule.sectionId);
+    return { sectionId: schedule.sectionId, liveDate, deadDate };
+  });
+}
 
 // @desc Clone an exam and its questions into another course owned by the lecturer
 // @route POST /api/users/exam/:examId/clone

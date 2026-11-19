@@ -29,6 +29,8 @@ const CourseEnrollments = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedRosterIds, setSelectedRosterIds] = useState([]);
+  const [bulkSectionId, setBulkSectionId] = useState('');
   const [saving, setSaving] = useState(false);
   const actionPending = useRef(false);
   const enrollmentRequest = useRef(0);
@@ -59,6 +61,7 @@ const CourseEnrollments = () => {
       });
       if (request !== enrollmentRequest.current) return;
       setEnrollments(data);
+      setSelectedRosterIds((ids) => ids.filter((id) => data.some((item) => item._id === id && item.status === 'approved')));
       setSelectedIds((ids) =>
         ids.filter((id) =>
           data.some((enrollment) => enrollment._id === id && enrollment.status === 'pending'),
@@ -116,6 +119,27 @@ const CourseEnrollments = () => {
     }
   };
 
+  const handleBulkSectionChange = async () => {
+    if (actionPending.current || !selectedCourseId || !bulkSectionId || selectedRosterIds.length === 0) return;
+    actionPending.current = true;
+    setSaving(true);
+    try {
+      const { data } = await axiosInstance.put(
+        `/api/enrollments/course/${selectedCourseId}/section`,
+        { sectionId: bulkSectionId, enrollmentIds: selectedRosterIds },
+        { withCredentials: true },
+      );
+      toast.success(`${data.updatedCount} student${data.updatedCount === 1 ? '' : 's'} assigned to the section`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to assign the selected students');
+    } finally {
+      await fetchEnrollments(selectedCourseId);
+      setSelectedRosterIds([]);
+      actionPending.current = false;
+      setSaving(false);
+    }
+  };
+
   const handleBulkApprove = async () => {
     if (actionPending.current || selectedIds.length === 0 || !canBulkApprove) return;
     actionPending.current = true;
@@ -145,6 +169,7 @@ const CourseEnrollments = () => {
   const selectedCourse = courses.find((c) => c.courseId === selectedCourseId);
   const pending = enrollments.filter((e) => e.status === 'pending');
   const approved = enrollments.filter((e) => e.status === 'approved');
+  const allRosterSelected = approved.length > 0 && approved.every((item) => selectedRosterIds.includes(item._id));
   const sectionCounts = (sectionId) => approved.filter((item) => item.sectionId === sectionId).length;
   const canApprove = (enrollment) => {
     const section = selectedCourse?.sections?.find((item) => item.sectionId === enrollment.sectionId);
@@ -189,6 +214,8 @@ const CourseEnrollments = () => {
             onChange={(e) => {
               enrollmentRequest.current += 1;
               setSelectedIds([]);
+              setSelectedRosterIds([]);
+              setBulkSectionId('');
               setEnrollments([]);
               setLoading(true);
               setSelectedCourseId(e.target.value);
@@ -325,11 +352,28 @@ const CourseEnrollments = () => {
             {approved.length === 0 ? (
               <Typography color="text.secondary">No students enrolled yet.</Typography>
             ) : (
+              <>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'flex-start', sm: 'center' }} mb={1}>
+                  <FormControlLabel
+                    label={`Select all students (${approved.length})`}
+                    control={<Checkbox checked={allRosterSelected} indeterminate={selectedRosterIds.length > 0 && !allRosterSelected} disabled={saving} onChange={() => setSelectedRosterIds(allRosterSelected ? [] : approved.map((item) => item._id))} />}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 170 }} disabled={saving || selectedRosterIds.length === 0}>
+                    <InputLabel id="bulk-section-label">Assign to section</InputLabel>
+                    <Select labelId="bulk-section-label" label="Assign to section" value={bulkSectionId} onChange={(e) => setBulkSectionId(e.target.value)}>
+                      {(selectedCourse?.sections || []).map((section) => <MenuItem key={section.sectionId} value={section.sectionId}>{section.name}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <Button variant="contained" size="small" disabled={saving || selectedRosterIds.length === 0 || !bulkSectionId} onClick={handleBulkSectionChange}>
+                    {saving ? 'Assigning…' : `Assign Selected (${selectedRosterIds.length})`}
+                  </Button>
+                </Stack>
               <List disablePadding>
                 {approved.map((enrollment, index) => (
                   <React.Fragment key={enrollment._id}>
                     {index > 0 && <Divider />}
                     <ListItem sx={{ py: 1 }}>
+                      <Checkbox checked={selectedRosterIds.includes(enrollment._id)} disabled={saving} onChange={() => setSelectedRosterIds((ids) => ids.includes(enrollment._id) ? ids.filter((id) => id !== enrollment._id) : [...ids, enrollment._id])} inputProps={{ 'aria-label': `Select ${enrollment.student?.name || 'student'} for section assignment` }} />
                       <ListItemText
                         primary={enrollment.student?.name}
                         secondary={`${enrollment.student?.email} · ${selectedCourse?.sections?.find((section) => section.sectionId === enrollment.sectionId)?.name || 'Section unavailable'}`}
@@ -345,6 +389,7 @@ const CourseEnrollments = () => {
                   </React.Fragment>
                 ))}
               </List>
+              </>
             )}
           </DashboardCard>
         </Stack>

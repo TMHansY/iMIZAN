@@ -55,6 +55,7 @@ const CreateExamPage = () => {
   const initialExamValues = {
     examName: '',
     courseId: '',
+    sectionSchedules: [],
     totalQuestions: '',
     duration: '',
     liveDate: '',

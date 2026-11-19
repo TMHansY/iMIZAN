@@ -7,6 +7,7 @@ import {
   approveEnrollment,
   rejectEnrollment,
   changeEnrollmentSection,
+  bulkChangeEnrollmentSection,
 } from "../controllers/enrollmentController.js";
 
 const enrollmentRoutes = express.Router();
@@ -19,5 +20,6 @@ enrollmentRoutes.get("/course/:courseId", getEnrollmentsForCourse);
 enrollmentRoutes.put("/:id/approve", approveEnrollment);
 enrollmentRoutes.put("/:id/reject", rejectEnrollment);
 enrollmentRoutes.put("/:id/section", changeEnrollmentSection);
+enrollmentRoutes.put("/course/:courseId/section", bulkChangeEnrollmentSection);
 
 export default enrollmentRoutes;

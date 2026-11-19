@@ -12,7 +12,22 @@ const getCourses = asyncHandler(async (req, res) => {
   const courses = await Course.find()
     .populate("lecturer", "name email")
     .sort({ createdAt: -1 });
-  res.status(200).json(courses);
+  const enrollmentsBySection = await Enrollment.aggregate([
+    { $match: { status: "approved" } },
+    { $group: { _id: { courseId: "$courseId", sectionId: "$sectionId" }, enrolledCount: { $sum: 1 } } },
+  ]);
+  const countBySection = new Map(
+    enrollmentsBySection.map((item) => [`${item._id.courseId}:${item._id.sectionId}`, item.enrolledCount]),
+  );
+  const coursesWithAvailability = courses.map((course) => {
+    const data = course.toObject();
+    data.sections = (data.sections || []).map((section) => {
+      const enrolledCount = countBySection.get(`${data.courseId}:${section.sectionId}`) || 0;
+      return { ...section, enrolledCount, placesLeft: Math.max(0, section.studentLimit - enrolledCount) };
+    });
+    return data;
+  });
+  res.status(200).json(coursesWithAvailability);
 });
 
 // @desc    Create a course

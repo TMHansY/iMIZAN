@@ -10,6 +10,7 @@ import courseRoutes from "./routes/courseRoutes.js";
 import enrollmentRoutes from "./routes/enrollmentRoutes.js";
 import path from "path";
 import cors from "cors";
+import { processExpiredAttempts } from "./services/expiredAttemptProcessor.js";
 dotenv.config();
 connectDB();
 const app = express();
@@ -59,4 +60,9 @@ app.use(errorHandler);
 // Server
 app.listen(port, () => {
   console.log(`server is running on http://localhost:${port}`);
+  processExpiredAttempts().catch((error) => console.error("Expired exam processing failed:", error));
+  const expiredAttemptTimer = setInterval(() => {
+    processExpiredAttempts().catch((error) => console.error("Expired exam processing failed:", error));
+  }, 5000);
+  expiredAttemptTimer.unref();
 });

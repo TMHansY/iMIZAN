@@ -22,4 +22,5 @@ examAttemptSchema.index(
   { unique: true, partialFilterExpression: { status: 'active' } },
 );
 examAttemptSchema.index({ examId: 1, userId: 1, slot: 1 }, { unique: true });
+examAttemptSchema.index({ status: 1, expiresAt: 1 });
 export default mongoose.model('ExamAttempt', examAttemptSchema);
