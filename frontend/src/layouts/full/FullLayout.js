@@ -40,7 +40,7 @@ const FullLayout = () => {
         {/* ------------------------------------------- */}
         {/* Header */}
         {/* ------------------------------------------- */}
-        <Header toggleMobileSidebar={() => setMobileSidebarOpen(true)} />
+        <Header hasSidebar toggleMobileSidebar={() => setMobileSidebarOpen(true)} />
         {/* ------------------------------------------- */}
         {/* PageContent */}
         {/* ------------------------------------------- */}

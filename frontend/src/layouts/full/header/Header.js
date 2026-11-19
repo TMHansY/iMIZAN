@@ -6,7 +6,7 @@ import { useSelector } from 'react-redux';
 import Profile from './Profile';
 import NotificationBell from './NotificationBell';
 
-const Header = ({ toggleMobileSidebar }) => {
+const Header = ({ toggleMobileSidebar, hasSidebar = false }) => {
   const { userInfo } = useSelector((state) => state.auth);
   const toolbarHeight = { minHeight: { xs: 64, lg: 76 } };
   return (
@@ -17,8 +17,8 @@ const Header = ({ toggleMobileSidebar }) => {
         elevation={0}
         sx={{
           top: 0,
-          left: { lg: '260px' },
-          width: { lg: 'calc(100% - 260px)' },
+          left: hasSidebar ? { lg: '260px' } : 0,
+          width: hasSidebar ? { lg: 'calc(100% - 260px)' } : '100%',
           color: 'text.primary',
           bgcolor: 'background.paper',
           borderBottom: '1px solid',
