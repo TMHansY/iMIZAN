@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">iMIZAN student awareness poster</title>
+  <desc id="desc">iMIZAN supports proctored exams for fair, focused assessment. Intelligent Monitoring and Invigilation for Zero-misconduct Assessment Network.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11172f"/><stop offset="1" stop-color="#20265a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#615dff"/><stop offset="1" stop-color="#3dd9eb"/>
+    </linearGradient>
+    <pattern id="dots" width="34" height="34" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="2" fill="#fff" opacity=".12"/></pattern>
+  </defs>
+  <rect width="1080" height="1350" fill="#f3f6fb"/>
+  <rect x="36" y="36" width="1008" height="1278" rx="38" fill="url(#bg)"/>
+  <rect x="36" y="36" width="1008" height="1278" rx="38" fill="url(#dots)"/>
+  <circle cx="950" cy="185" r="210" fill="#615dff" opacity=".16"/>
+  <circle cx="108" cy="1115" r="260" fill="#3dd9eb" opacity=".10"/>
+
+  <!-- Brand mark -->
+  <g transform="translate(104 100)">
+    <path d="M29 0a29 29 0 0 1 29 29v29H29A29 29 0 0 1 0 29 29 29 0 0 1 29 0Z" fill="#615dff"/>
+    <path d="M29 0a29 29 0 0 0-29 29v29h29a29 29 0 0 0 29-29A29 29 0 0 0 29 0Z" fill="#3dd9eb" opacity=".82"/>
+    <text x="82" y="48" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="700" letter-spacing="-2">iMIZAN</text>
+  </g>
+  <text x="106" y="226" fill="#aeb9d8" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="4">SMART PROCTORING FOR FAIR ASSESSMENTS</text>
+
+  <!-- Main message -->
+  <text x="102" y="355" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700" letter-spacing="-2">Proctored exams.</text>
+  <text x="102" y="443" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="700" letter-spacing="-2">Fair <tspan fill="#65dfec">by design.</tspan></text>
+  <text x="106" y="508" fill="#bac4df" font-family="Arial, Helvetica, sans-serif" font-size="24">iMIZAN helps maintain a focused, accountable exam environment.</text>
+  <rect x="102" y="548" width="876" height="62" rx="14" fill="#3dd9eb" opacity=".13" stroke="#3dd9eb" stroke-opacity=".55"/>
+  <circle cx="134" cy="579" r="8" fill="#65dfec"/>
+  <text x="158" y="587" fill="#e8fbff" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700">Show what you know. Own your moment.</text>
+
+  <!-- Journey card -->
+  <rect x="102" y="664" width="876" height="274" rx="26" fill="#fff" opacity=".08" stroke="#fff" stroke-opacity=".16"/>
+  <text x="142" y="719" fill="#aeb9d8" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" letter-spacing="3">YOUR JOURNEY, ALL IN ONE PLACE</text>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <circle cx="172" cy="799" r="28" fill="url(#accent)"/><text x="172" y="808" fill="#11172f" font-size="24" font-weight="700" text-anchor="middle">1</text>
+    <text x="218" y="807" fill="#fff" font-size="24" font-weight="700">Join a course</text>
+    <path d="M390 799h38" stroke="#7180a8" stroke-width="2"/><path d="m420 791 9 8-9 8" fill="none" stroke="#7180a8" stroke-width="2"/>
+    <circle cx="476" cy="799" r="28" fill="url(#accent)"/><text x="476" y="808" fill="#11172f" font-size="24" font-weight="700" text-anchor="middle">2</text>
+    <text x="522" y="807" fill="#fff" font-size="24" font-weight="700">Take exams</text>
+    <path d="M696 799h38" stroke="#7180a8" stroke-width="2"/><path d="m726 791 9 8-9 8" fill="none" stroke="#7180a8" stroke-width="2"/>
+    <circle cx="782" cy="799" r="28" fill="url(#accent)"/><text x="782" y="808" fill="#11172f" font-size="24" font-weight="700" text-anchor="middle">3</text>
+    <text x="828" y="807" fill="#fff" font-size="24" font-weight="700">See results</text>
+  </g>
+  <path d="M142 861h796" stroke="#fff" stroke-opacity=".15"/>
+  <text x="142" y="903" fill="#d7def1" font-family="Arial, Helvetica, sans-serif" font-size="20">Proctoring helps keep exams focused and supports fair assessment.</text>
+
+  <!-- Acronym definition -->
+  <text x="104" y="1013" fill="#65dfec" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" letter-spacing="3">THE NAME BEHIND THE MISSION</text>
+  <text x="104" y="1060" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">Intelligent Monitoring and Invigilation</text>
+  <text x="104" y="1097" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">for Zero-misconduct Assessment Network</text>
+  <text x="104" y="1158" fill="#bac4df" font-family="Arial, Helvetica, sans-serif" font-size="20">Before an exam: check the instructions, prepare your space,</text>
+  <text x="104" y="1188" fill="#bac4df" font-family="Arial, Helvetica, sans-serif" font-size="20">and follow your lecturer’s guidance.</text>
+
+  <path d="M104 1231h872" stroke="#fff" stroke-opacity=".2"/>
+  <text x="104" y="1273" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="2">LEARN WELL. SHOW UP READY.</text>
+  <text x="976" y="1273" fill="#aeb9d8" font-family="Arial, Helvetica, sans-serif" font-size="16" text-anchor="end">iMIZAN</text>
+</svg>
