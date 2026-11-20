@@ -50,6 +50,10 @@ const registerUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Name, email, ID number, and password are required.");
   }
+  if (idNumber.length > 8) {
+    res.status(400);
+    throw new Error("Matric/Staff Number must be 8 characters or fewer.");
+  }
   if (!["student", "lecturer"].includes(role)) {
     res.status(400);
     throw new Error(

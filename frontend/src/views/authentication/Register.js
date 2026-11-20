@@ -16,10 +16,12 @@ const userValidationSchema = yup.object({
   name: yup
     .string()
     .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must be 100 characters or fewer')
     .required('Please enter your name'),
   email: yup.string('Enter your email').email('Enter a valid email').required('Email is required'),
-  idNumber: yup.string().required('Matric/Staff Number is required'),
+  idNumber: yup
+    .string()
+    .max(8, 'Matric/Staff Number must be 8 characters or fewer')
+    .required('Matric/Staff Number is required'),
   password: yup
     .string('Enter your password')
     .min(6, 'Password should be of minimum 6 characters length')
