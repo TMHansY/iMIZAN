@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { useGetExamsQuery, useUpdateExamMutation } from '../../slices/examApiSlice.js';
 import { useState } from 'react';
 import axiosInstance from '../../axios';
+import { serializeExamDateTimes } from '../../utils/examDateTime';
 
 const examValidationSchema = yup.object({
   examName: yup.string().required('Exam Name is required'),
@@ -86,7 +87,7 @@ const EditExamPage = () => {
     enableReinitialize: true,
     onSubmit: async (values) => {
       try {
-        await updateExam({ examId, ...values }).unwrap();
+        await updateExam({ examId, ...serializeExamDateTimes(values) }).unwrap();
         toast.success('Exam updated successfully');
         navigate('/exam');
       } catch (err) {

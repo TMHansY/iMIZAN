@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 import { useCreateExamMutation } from '../../slices/examApiSlice.js';
 import { useEffect, useState } from 'react';
 import axiosInstance from '../../axios';
+import { serializeExamDateTimes } from '../../utils/examDateTime';
 
 const examValidationSchema = yup.object({
   examName: yup.string().required('Exam Name is required'),
@@ -69,7 +70,7 @@ const CreateExamPage = () => {
 
   const handleSubmit = async (values) => {
     try {
-      const examResponse = await createExam(values).unwrap();
+      const examResponse = await createExam(serializeExamDateTimes(values)).unwrap();
       if (examResponse) {
         toast.success('Exam created successfully');
         formik.resetForm();

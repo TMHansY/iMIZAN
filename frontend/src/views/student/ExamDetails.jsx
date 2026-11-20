@@ -91,6 +91,16 @@ const buildInstructionItems = (exam) => {
   return items;
 };
 
+const formatAvailabilityDate = (date) =>
+  new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
+
 export default function ExamDetails() {
   const navigate = useNavigate();
   const { examId } = useParams();
@@ -101,6 +111,12 @@ export default function ExamDetails() {
 
   const [attemptInfo, setAttemptInfo] = useState(null);
   const [attemptLoading, setAttemptLoading] = useState(true);
+  const [availabilityClock, setAvailabilityClock] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setAvailabilityClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const fetchAttempts = async () => {
@@ -124,6 +140,28 @@ export default function ExamDetails() {
   const expiredAttempt =
     attemptInfo?.activeAttempt &&
     new Date(attemptInfo.activeAttempt.expiresAt).getTime() <= Date.now();
+  const availableFrom = currentExam ? new Date(currentExam.liveDate).getTime() : NaN;
+  const availableUntil = currentExam ? new Date(currentExam.deadDate).getTime() : NaN;
+  const examIsAvailable =
+    Number.isFinite(availableFrom) &&
+    Number.isFinite(availableUntil) &&
+    availabilityClock >= availableFrom &&
+    availabilityClock < availableUntil;
+  const hasExistingAttempt = Boolean(attemptInfo?.activeAttempt);
+  const availabilityMessage =
+    Number.isFinite(availableFrom) && Number.isFinite(availableUntil)
+      ? availabilityClock < availableFrom
+        ? `This exam will be available from ${formatAvailabilityDate(
+            new Date(availableFrom),
+          )} until ${formatAvailabilityDate(new Date(availableUntil))}.`
+        : availabilityClock < availableUntil
+        ? `This exam is available now and will close ${formatAvailabilityDate(
+            new Date(availableUntil),
+          )}.`
+        : `This exam became unavailable ${formatAvailabilityDate(
+            new Date(availableUntil),
+          )}. New attempts cannot be started.`
+      : 'The availability time for this exam could not be loaded. Please refresh or contact your lecturer.';
   const testId = uniqueId();
   const [certify, setCertify] = useState(false);
   const handleCertifyChange = () => setCertify(!certify);
@@ -156,6 +194,10 @@ export default function ExamDetails() {
   };
 
   const handleTest = () => {
+    if (!examIsAvailable && !hasExistingAttempt) {
+      toast.error(availabilityMessage);
+      return;
+    }
     if (!cameraVerified && !expiredAttempt) {
       toast.error('Please complete the camera check before starting the test.');
       return;
@@ -255,6 +297,9 @@ export default function ExamDetails() {
                 : 'Your attempt is in progress. Its timer continues while you are away; resume to continue with your saved answers.'}
             </Alert>
           )}
+          <Alert severity={examIsAvailable ? 'info' : 'warning'} sx={{ mb: 2 }}>
+            {availabilityMessage}
+          </Alert>
           {attemptsExhausted ? (
             <Alert severity="error">
               You have used all {attemptInfo.maxAttempts} attempt
@@ -275,7 +320,11 @@ export default function ExamDetails() {
               <Button
                 variant="contained"
                 color="primary"
-                disabled={attemptLoading || (!expiredAttempt && (!certify || !cameraVerified))}
+                disabled={
+                  attemptLoading ||
+                  (!examIsAvailable && !hasExistingAttempt) ||
+                  (!expiredAttempt && (!certify || !cameraVerified))
+                }
                 onClick={handleTest}
                 fullWidth
               >
