@@ -65,10 +65,10 @@ test('switching still works when local storage is unavailable', () => {
   expect(screen.getByTestId('palette').textContent).toBe('dark:#20272D');
 });
 
-test('the theme button displays the destination mode as a visible label', () => {
+test('the theme button uses an icon with an accessible destination label', () => {
   mount();
   const button = screen.getByRole('button', { name: 'Switch to dark theme' });
-  expect(button.textContent).toContain('Dark mode');
+  expect(button.textContent).toBe('');
   fireEvent.click(button);
-  expect(screen.getByRole('button', { name: 'Switch to light theme' }).textContent).toContain('Light mode');
+  expect(screen.getByRole('button', { name: 'Switch to light theme' }).textContent).toBe('');
 });

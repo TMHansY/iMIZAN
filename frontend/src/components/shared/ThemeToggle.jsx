@@ -1,4 +1,4 @@
-import { Button, Tooltip } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import { useColorMode } from '../../context/ColorModeContext';
@@ -8,23 +8,22 @@ export default function ThemeToggle() {
   const label = `Switch to ${mode === 'dark' ? 'light' : 'dark'} theme`;
   return (
     <Tooltip title={label}>
-      <Button
+      <IconButton
         aria-label={label}
+        title={label}
         onClick={toggleMode}
-        variant="outlined"
-        startIcon={mode === 'dark' ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+        color="inherit"
         sx={{
           flexShrink: 0,
           color: 'text.primary',
           bgcolor: 'background.paper',
-          borderColor: 'text.secondary',
-          whiteSpace: 'nowrap',
-          px: { xs: 1.25, sm: 2 },
-          '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+          border: '1px solid',
+          borderColor: 'divider',
+          '&:hover': { bgcolor: 'action.hover' },
         }}
       >
-        {mode === 'dark' ? 'Light mode' : 'Dark mode'}
-      </Button>
+        {mode === 'dark' ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+      </IconButton>
     </Tooltip>
   );
 }

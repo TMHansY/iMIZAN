@@ -22,8 +22,11 @@ import {
 import { toast } from 'react-toastify';
 import { uploadcareClient } from '../../../utils/uploadcareClient';
 import { getYouTubeEmbedUrl } from '../../../utils/youtube';
+import { useNavigate } from 'react-router-dom';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 const AddQuestionForm = () => {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState('');
   const [newOptions, setNewOptions] = useState(['', '', '', '']);
@@ -228,7 +231,9 @@ const AddQuestionForm = () => {
         value={newQuestion}
         onChange={(e) => setNewQuestion(e.target.value)}
         fullWidth
-        rows={4}
+        multiline
+        minRows={4}
+        maxRows={12}
         sx={{ mb: 1 }}
       />
 
@@ -318,6 +323,14 @@ const AddQuestionForm = () => {
           disabled={limitReached || isUploadingImage}
         >
           Add Question
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<VisibilityOutlinedIcon />}
+          onClick={() => navigate(`/exam-preview/${selectedExamId}`)}
+          disabled={!selectedExamId}
+        >
+          Preview current exam
         </Button>
       </Stack>
     </div>

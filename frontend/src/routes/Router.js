@@ -31,6 +31,7 @@ const MyTasksPage = Loadable(lazy(() => import('../views/user/MyTasksPage')));
 // Lecturer Routes
 const CreateExamPage = Loadable(lazy(() => import('./../views/lecturer/CreateExamPage')));
 const EditExamPage = Loadable(lazy(() => import('./../views/lecturer/EditExamPage')));
+const ExamPreviewPage = Loadable(lazy(() => import('./../views/lecturer/ExamPreviewPage')));
 const ExamLogPage = Loadable(lazy(() => import('./../views/lecturer/ExamLogPage')));
 const AddQuestions = Loadable(lazy(() => import('./../views/lecturer/AddQuestions')));
 const CourseEnrollments = Loadable(lazy(() => import('./../views/lecturer/CourseEnrollments')));
@@ -60,6 +61,7 @@ const Router = createBrowserRouter(
           <Route path="" element={<LecturerRoute />}>
             <Route path="/create-exam" exact={true} element={<CreateExamPage />} />
             <Route path="/edit-exam/:examId" exact={true} element={<EditExamPage />} />
+            <Route path="/exam-preview/:examId" exact={true} element={<ExamPreviewPage />} />
             <Route path="/add-questions" exact={true} element={<AddQuestions />} />
             <Route path="/exam-log" exact={true} element={<ExamLogPage />} />
             <Route path="/course-enrollments" exact={true} element={<CourseEnrollments />} />

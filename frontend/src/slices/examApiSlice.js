@@ -29,6 +29,7 @@ export const examApiSlice = apiSlice.injectEndpoints({
         url: `${EXAMS_URL}/exam/questions/${examId}`,
         method: 'GET',
       }),
+      providesTags: ['Exam'],
     }),
     // Create a new question for an exam
     createQuestion: builder.mutation({
@@ -37,6 +38,23 @@ export const examApiSlice = apiSlice.injectEndpoints({
         method: 'POST',
         body: data,
       }),
+    }),
+    updateQuestion: builder.mutation({
+      query: ({ questionId, ...data }) => ({
+        url: `${EXAMS_URL}/exam/question/${questionId}`,
+        method: 'PUT',
+        body: data,
+        credentials: 'include',
+      }),
+      invalidatesTags: ['Exam'],
+    }),
+    deleteQuestion: builder.mutation({
+      query: (questionId) => ({
+        url: `${EXAMS_URL}/exam/question/${questionId}`,
+        method: 'DELETE',
+        credentials: 'include',
+      }),
+      invalidatesTags: ['Exam'],
     }),
 
     //Delete an exam
@@ -75,6 +93,8 @@ export const {
   useCreateExamMutation,
   useGetQuestionsQuery,
   useCreateQuestionMutation,
+  useUpdateQuestionMutation,
+  useDeleteQuestionMutation,
   useDeleteExamMutation,
   useUpdateExamMutation,
   useCloneExamMutation,

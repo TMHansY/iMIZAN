@@ -86,4 +86,68 @@ const createQuestion = asyncHandler(async (req, res) => {
   }
 });
 
-export { getQuestionsByExamId, createQuestion };
+const updateQuestion = asyncHandler(async (req, res) => {
+  const { questionId } = req.params;
+  const { question, options, imageUrl, videoUrl } = req.body;
+
+  if (
+    !question?.trim() ||
+    !Array.isArray(options) ||
+    options.length < 2 ||
+    options.some((option) => !option.optionText?.trim()) ||
+    !options.some((option) => option.isCorrect)
+  ) {
+    res.status(400);
+    throw new Error(
+      'Provide a question, at least two options, and a correct answer.'
+    );
+  }
+
+  const existingQuestion = await Question.findById(questionId);
+  if (!existingQuestion) {
+    res.status(404);
+    throw new Error('Question not found');
+  }
+  const exam = await Exam.findOne({ examId: existingQuestion.examId });
+  if (!exam || !isExamOwner(exam, req.user)) {
+    res.status(403);
+    throw new Error('You are not authorized to edit this question');
+  }
+
+  const embeddedVideoUrl = getYouTubeEmbedUrl(videoUrl);
+  if (videoUrl && !embeddedVideoUrl) {
+    res.status(400);
+    throw new Error('Enter a valid YouTube video link.');
+  }
+
+  existingQuestion.question = question.trim();
+  existingQuestion.options = options.map((option) => ({
+    optionText: option.optionText.trim(),
+    isCorrect: Boolean(option.isCorrect),
+  }));
+  existingQuestion.imageUrl = imageUrl || null;
+  existingQuestion.videoUrl = embeddedVideoUrl;
+  await existingQuestion.save();
+  res.status(200).json(existingQuestion);
+});
+
+const deleteQuestion = asyncHandler(async (req, res) => {
+  const existingQuestion = await Question.findById(req.params.questionId);
+  if (!existingQuestion) {
+    res.status(404);
+    throw new Error('Question not found');
+  }
+
+  const exam = await Exam.findOne({ examId: existingQuestion.examId });
+  if (!exam || !isExamOwner(exam, req.user)) {
+    res.status(403);
+    throw new Error('You are not authorized to delete this question');
+  }
+
+  await existingQuestion.deleteOne();
+  exam.totalQuestions = Math.max(1, exam.totalQuestions - 1);
+  await exam.save();
+  res.status(200).json({ message: 'Question deleted', totalQuestions: exam.totalQuestions });
+});
+
+export { getQuestionsByExamId, createQuestion, updateQuestion, deleteQuestion };

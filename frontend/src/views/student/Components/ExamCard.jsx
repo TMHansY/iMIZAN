@@ -15,6 +15,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import SchoolIcon from '@mui/icons-material/School';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 const cardIcons = [MenuBookIcon, QuizIcon, AssignmentIcon, SchoolIcon, FactCheckIcon, EditNoteIcon];
 // Deterministic pick based on examId, so each exam always shows the same icon
@@ -96,6 +97,22 @@ export default function ExamCard({ exam }) {
               </Stack>
             )}
           </Stack>
+
+          {isLecturer && (
+            <Button
+              aria-label="Preview as student"
+              size="small"
+              variant="outlined"
+              startIcon={<VisibilityOutlinedIcon fontSize="small" />}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/exam-preview/${examId}`);
+              }}
+              sx={{ alignSelf: 'flex-start', mb: 1.5 }}
+            >
+              Preview as student
+            </Button>
+          )}
 
           <Typography variant="body2" color="text.secondary">
             Multiple choice assessment
