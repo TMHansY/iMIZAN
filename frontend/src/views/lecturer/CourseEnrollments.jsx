@@ -17,7 +17,10 @@ import {
   LinearProgress,
   Checkbox,
   FormControlLabel,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import { toast } from 'react-toastify';
 import PageContainer from 'src/components/container/PageContainer';
 import DashboardCard from '../../components/shared/DashboardCard';
@@ -27,6 +30,7 @@ const CourseEnrollments = () => {
   const [courses, setCourses] = useState([]);
   const [selectedCourseId, setSelectedCourseId] = useState('');
   const [enrollments, setEnrollments] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedRosterIds, setSelectedRosterIds] = useState([]);
@@ -169,7 +173,14 @@ const CourseEnrollments = () => {
   const selectedCourse = courses.find((c) => c.courseId === selectedCourseId);
   const pending = enrollments.filter((e) => e.status === 'pending');
   const approved = enrollments.filter((e) => e.status === 'approved');
-  const allRosterSelected = approved.length > 0 && approved.every((item) => selectedRosterIds.includes(item._id));
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const matchesSearch = (enrollment) =>
+    !normalizedSearch ||
+    [enrollment.student?.name, enrollment.student?.email, enrollment.student?.idNumber].some(
+      (value) => value?.toLowerCase().includes(normalizedSearch),
+    );
+  const visiblePending = pending.filter(matchesSearch);
+  const visibleApproved = approved.filter(matchesSearch);
   const sectionCounts = (sectionId) => approved.filter((item) => item.sectionId === sectionId).length;
   const canApprove = (enrollment) => {
     const section = selectedCourse?.sections?.find((item) => item.sectionId === enrollment.sectionId);
@@ -205,7 +216,8 @@ const CourseEnrollments = () => {
   return (
     <PageContainer title="Course Enrollments" description="Manage student applications">
       <Box mb={3}>
-        <FormControl sx={{ minWidth: 250, maxWidth: '100%' }} disabled={saving}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <FormControl sx={{ minWidth: 250, maxWidth: '100%' }} disabled={saving}>
           <InputLabel id="enrollment-course-label">Select Course</InputLabel>
           <Select
             labelId="enrollment-course-label"
@@ -227,7 +239,21 @@ const CourseEnrollments = () => {
               </MenuItem>
             ))}
           </Select>
-        </FormControl>
+          </FormControl>
+          <TextField
+            label="Search"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            sx={{ minWidth: 280, maxWidth: '100%' }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Stack>
       </Box>
 
       {loading ? (
@@ -247,8 +273,8 @@ const CourseEnrollments = () => {
           )}
 
           <DashboardCard title="Pending Applications">
-            {pending.length === 0 ? (
-              <Typography color="text.secondary">No pending applications.</Typography>
+            {visiblePending.length === 0 ? (
+              <Typography color="text.secondary">{pending.length ? 'No pending applications match your search.' : 'No pending applications.'}</Typography>
             ) : (
               <>
                 <Stack
@@ -262,16 +288,16 @@ const CourseEnrollments = () => {
                     label="Select all"
                     control={
                       <Checkbox
-                        checked={selectedIds.length === pending.length}
+                        checked={visiblePending.length > 0 && visiblePending.every((item) => selectedIds.includes(item._id))}
                         indeterminate={
-                          selectedIds.length > 0 && selectedIds.length < pending.length
+                          visiblePending.some((item) => selectedIds.includes(item._id)) && !visiblePending.every((item) => selectedIds.includes(item._id))
                         }
                         disabled={saving}
                         onChange={() =>
                           setSelectedIds((ids) =>
-                            ids.length === pending.length
-                              ? []
-                              : pending.map((enrollment) => enrollment._id),
+                            visiblePending.every((item) => ids.includes(item._id))
+                              ? ids.filter((id) => !visiblePending.some((item) => item._id === id))
+                              : [...new Set([...ids, ...visiblePending.map((item) => item._id)])],
                           )
                         }
                       />
@@ -293,7 +319,7 @@ const CourseEnrollments = () => {
                   <Typography variant="body2" color="error" mb={1} role="status">One or more selected sections are full. Reassign the student or ask an admin to increase the section limit.</Typography>
                 )}
                 <List disablePadding>
-                  {pending.map((enrollment, index) => (
+                  {visiblePending.map((enrollment, index) => (
                     <React.Fragment key={enrollment._id}>
                       {index > 0 && <Divider />}
                       <ListItem sx={{ py: 1.5, px: 0, gap: 1, flexWrap: 'wrap' }}>
@@ -349,14 +375,14 @@ const CourseEnrollments = () => {
           </DashboardCard>
 
           <DashboardCard title="Current Roster">
-            {approved.length === 0 ? (
-              <Typography color="text.secondary">No students enrolled yet.</Typography>
+            {visibleApproved.length === 0 ? (
+              <Typography color="text.secondary">{approved.length ? 'No enrolled students match your search.' : 'No students enrolled yet.'}</Typography>
             ) : (
               <>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ xs: 'flex-start', sm: 'center' }} mb={1}>
                   <FormControlLabel
-                    label={`Select all students (${approved.length})`}
-                    control={<Checkbox checked={allRosterSelected} indeterminate={selectedRosterIds.length > 0 && !allRosterSelected} disabled={saving} onChange={() => setSelectedRosterIds(allRosterSelected ? [] : approved.map((item) => item._id))} />}
+                    label={`Select all students (${visibleApproved.length})`}
+                    control={<Checkbox checked={visibleApproved.length > 0 && visibleApproved.every((item) => selectedRosterIds.includes(item._id))} indeterminate={visibleApproved.some((item) => selectedRosterIds.includes(item._id)) && !visibleApproved.every((item) => selectedRosterIds.includes(item._id))} disabled={saving} onChange={() => setSelectedRosterIds((ids) => visibleApproved.every((item) => ids.includes(item._id)) ? ids.filter((id) => !visibleApproved.some((item) => item._id === id)) : [...new Set([...ids, ...visibleApproved.map((item) => item._id)])])} />}
                   />
                   <FormControl size="small" sx={{ minWidth: 170 }} disabled={saving || selectedRosterIds.length === 0}>
                     <InputLabel id="bulk-section-label">Assign to section</InputLabel>
@@ -369,7 +395,7 @@ const CourseEnrollments = () => {
                   </Button>
                 </Stack>
               <List disablePadding>
-                {approved.map((enrollment, index) => (
+                {visibleApproved.map((enrollment, index) => (
                   <React.Fragment key={enrollment._id}>
                     {index > 0 && <Divider />}
                     <ListItem sx={{ py: 1 }}>

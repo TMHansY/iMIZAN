@@ -84,9 +84,12 @@ const AccountManagement = () => {
   };
 
   const filteredAccounts = accounts.filter((account) => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
     const matchesSearch =
-      account.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.email?.toLowerCase().includes(searchTerm.toLowerCase());
+      !normalizedSearch ||
+      [account.name, account.email, account.idNumber].some((value) =>
+        value?.toLowerCase().includes(normalizedSearch),
+      );
     const matchesRole = roleFilter === 'all' || account.role === roleFilter;
     const matchesDeactivated = !hideDeactivated || account.isApproved;
     return matchesSearch && matchesRole && matchesDeactivated;
@@ -105,7 +108,7 @@ const AccountManagement = () => {
       <DashboardCard title="All Accounts">
         <Box mb={3} display="flex" gap={2} flexWrap="wrap">
           <TextField
-            label="Search by name or email"
+            label="Search"
             variant="outlined"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -144,6 +147,7 @@ const AccountManagement = () => {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
+                <TableCell>Matric/Staff Number</TableCell>
                 <TableCell>Role</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Actions</TableCell>
@@ -152,7 +156,7 @@ const AccountManagement = () => {
             <TableBody>
               {filteredAccounts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     No accounts match your filters.
                   </TableCell>
                 </TableRow>
@@ -161,6 +165,7 @@ const AccountManagement = () => {
                   <TableRow key={account._id}>
                     <TableCell>{account.name}</TableCell>
                     <TableCell>{account.email}</TableCell>
+                    <TableCell>{account.idNumber}</TableCell>
                     <TableCell>{account.role}</TableCell>
                     <TableCell>
                       <Chip
