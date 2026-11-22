@@ -21,6 +21,13 @@ const applyToCourse = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Course not found");
   }
+  if (course.isHidden || course.hideFromEveryone) {
+    const existingEnrollment = await Enrollment.exists({ courseId, student: req.user._id });
+    if (!existingEnrollment) {
+      res.status(404);
+      throw new Error("Course not found");
+    }
+  }
   const section = course.sections.find((item) => item.sectionId === sectionId);
   if (!section) {
     res.status(400);
@@ -59,7 +66,10 @@ const applyToCourse = asyncHandler(async (req, res) => {
 // @access  Private (Student only)
 const getMyEnrollments = asyncHandler(async (req, res) => {
   const enrollments = await Enrollment.find({ student: req.user._id });
-  res.status(200).json(enrollments);
+  const courseIds = [...new Set(enrollments.map((enrollment) => enrollment.courseId))];
+  const hiddenCourses = await Course.find({ courseId: { $in: courseIds }, hideFromEveryone: true }).select("courseId");
+  const hiddenCourseIds = new Set(hiddenCourses.map((course) => course.courseId));
+  res.status(200).json(enrollments.filter((enrollment) => !hiddenCourseIds.has(enrollment.courseId)));
 });
 
 // @desc    Get all enrollments (all statuses) for a course the lecturer owns

@@ -16,6 +16,14 @@ const courseSchema = mongoose.Schema(
       type: String,
       default: "",
     },
+    isHidden: {
+      type: Boolean,
+      default: false,
+    },
+    hideFromEveryone: {
+      type: Boolean,
+      default: false,
+    },
     lecturer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

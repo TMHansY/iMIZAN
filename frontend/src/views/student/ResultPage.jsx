@@ -26,7 +26,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Button,
   Stack,
   Divider,
@@ -257,22 +256,6 @@ const ResultPage = () => {
     }
   };
 
-  const handleSetDecision = async (decision) => {
-    if (!reviewResult) return;
-    try {
-      const response = await axiosInstance.put(
-        `/api/users/results/${reviewResult._id}/decision`,
-        { decision },
-        { withCredentials: true },
-      );
-      toast.success(decision ? `Marked as ${decision}` : 'Reset to automatic status');
-      setReviewResult(response.data.data);
-      await refreshResults();
-    } catch (err) {
-      toast.error('Failed to update decision');
-    }
-  };
-
   const filteredResults = results.filter((result) => {
     const examName = exams.find((e) => e.examId === result.examId)?.examName || '';
     const matchesSearch =
@@ -347,14 +330,6 @@ const ResultPage = () => {
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
   };
-
-  const StatusChip = ({ result }) => (
-    <Chip
-      label={result.status === 'pass' ? 'Pass' : 'Fail'}
-      color={result.status === 'pass' ? 'success' : 'error'}
-      size="small"
-    />
-  );
 
   if (loading) {
     return (
@@ -443,10 +418,9 @@ const ResultPage = () => {
                     <TableRow>
                       <TableCell>Exam Name</TableCell>
                       <TableCell>Attempt</TableCell>
-                      <TableCell>MCQ Score</TableCell>
+                      <TableCell>Percentage</TableCell>
                       <TableCell>Total Score</TableCell>
                       <TableCell>Time Taken</TableCell>
-                      <TableCell>Status</TableCell>
                       <TableCell>Submission Date</TableCell>
                       <TableCell>Review</TableCell>
                     </TableRow>
@@ -463,7 +437,7 @@ const ResultPage = () => {
                         <TableCell>
                           <Chip
                             label={`${result.percentage.toFixed(1)}%`}
-                            color={result.percentage >= 70 ? 'success' : 'warning'}
+                            color="default"
                           />
                         </TableCell>
                         <TableCell>
@@ -472,9 +446,6 @@ const ResultPage = () => {
                           </Typography>
                         </TableCell>
                         <TableCell>{formatDuration(result.timeTakenSeconds)}</TableCell>
-                        <TableCell>
-                          <StatusChip result={result} />
-                        </TableCell>
                         <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           {exams.find((e) => e.examId === result.examId)?.allowReview && (
@@ -666,10 +637,9 @@ const ResultPage = () => {
                     <TableCell>Exam</TableCell>
                     <TableCell>Section</TableCell>
                     <TableCell>Attempts</TableCell>
-                    <TableCell>MCQ Score</TableCell>
+                    <TableCell>Percentage</TableCell>
                     <TableCell>Total Score</TableCell>
                     <TableCell>Time Taken</TableCell>
-                    <TableCell>Status</TableCell>
                     <TableCell>Submission Date</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
@@ -694,7 +664,7 @@ const ResultPage = () => {
                         <IconButton
                           onClick={() => handleOpenReview(result)}
                           disabled={visibilitySaving}
-                          title="Review log & decide pass/fail"
+                          title="Review proctoring log"
                         >
                           <RateReviewIcon />
                         </IconButton>
@@ -741,7 +711,7 @@ const ResultPage = () => {
                           <TableCell>
                             <Chip
                               label={`${group.latest.percentage.toFixed(1)}%`}
-                              color={group.latest.percentage >= 70 ? 'success' : 'warning'}
+                              color="default"
                             />
                           </TableCell>
                           <TableCell>
@@ -750,14 +720,6 @@ const ResultPage = () => {
                             </Typography>
                           </TableCell>
                           <TableCell>{formatDuration(group.latest.timeTakenSeconds)}</TableCell>
-                          <TableCell>
-                            <StatusChip result={group.latest} />
-                            {group.latest.lecturerDecision && (
-                              <Typography variant="caption" display="block" color="textSecondary">
-                                (manual)
-                              </Typography>
-                            )}
-                          </TableCell>
                           <TableCell>
                             {new Date(group.latest.createdAt).toLocaleDateString()}
                           </TableCell>
@@ -781,7 +743,7 @@ const ResultPage = () => {
                                 <Chip
                                   size="small"
                                   label={`${attempt.percentage.toFixed(1)}%`}
-                                  color={attempt.percentage >= 70 ? 'success' : 'warning'}
+                                  color="default"
                                 />
                               </TableCell>
                               <TableCell>
@@ -790,9 +752,6 @@ const ResultPage = () => {
                                 </Typography>
                               </TableCell>
                               <TableCell>{formatDuration(attempt.timeTakenSeconds)}</TableCell>
-                              <TableCell>
-                                <StatusChip result={attempt} />
-                              </TableCell>
                               <TableCell>
                                 {new Date(attempt.createdAt).toLocaleDateString()}
                               </TableCell>
@@ -809,12 +768,12 @@ const ResultPage = () => {
         </Grid>
       </Grid>
 
-      {/* Review & Decide Dialog */}
+      {/* Proctoring review dialog */}
       <Dialog open={reviewDialogOpen} onClose={handleCloseReview} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">
-              Review — {reviewResult?.userId?.name} ({reviewResult?.userId?.email})
+              Proctoring Review — {reviewResult?.userId?.name} ({reviewResult?.userId?.email})
             </Typography>
             <IconButton onClick={handleCloseReview} size="small">
               <CloseIcon />
@@ -893,38 +852,12 @@ const ResultPage = () => {
 
               <Divider sx={{ my: 2 }} />
 
-              <Typography variant="subtitle1" gutterBottom>
-                Decision
-              </Typography>
-              <Typography variant="body2" color="textSecondary" gutterBottom>
-                Automatic status based on score: {reviewResult?.percentage >= 50 ? 'Pass' : 'Fail'}
-                {reviewResult?.lecturerDecision &&
-                  ` — currently overridden to "${reviewResult.lecturerDecision}"`}
-              </Typography>
             </>
           )}
         </DialogContent>
-        <DialogActions sx={{ flexWrap: 'wrap', gap: 1 }}>
-          <Button onClick={() => handleSetDecision(null)} disabled={reviewLoading}>
-            Reset to Automatic
-          </Button>
-          <Button
-            color="error"
-            variant="outlined"
-            onClick={() => handleSetDecision('fail')}
-            disabled={reviewLoading}
-          >
-            Mark as Fail
-          </Button>
-          <Button
-            color="success"
-            variant="contained"
-            onClick={() => handleSetDecision('pass')}
-            disabled={reviewLoading}
-          >
-            Mark as Pass
-          </Button>
-        </DialogActions>
+        <Box display="flex" justifyContent="flex-end" p={2}>
+          <Button onClick={handleCloseReview}>Close</Button>
+        </Box>
       </Dialog>
     </PageContainer>
   );

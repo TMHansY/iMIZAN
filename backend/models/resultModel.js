@@ -40,11 +40,6 @@ const resultSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    lecturerDecision: {
-      type: String,
-      enum: ['pass', 'fail', null],
-      default: null,
-    },
     codingMarks: {
       type: Number,
       default: 0,

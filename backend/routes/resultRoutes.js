@@ -9,7 +9,6 @@ import {
   toggleResultVisibility,
   getAllResults,
   getAttemptCount,
-  setResultDecision,
   getResultById,
   setExamResultsVisibility,
   getMyExamStatus,
@@ -42,9 +41,6 @@ resultRoutes.get('/results/user', getUserResults);
 
 // Toggle result visibility
 resultRoutes.put('/results/:resultId/toggle-visibility', toggleResultVisibility);
-
-// Set lecturer decision for a result
-resultRoutes.put('/results/:resultId/decision', setResultDecision);
 
 // Get a single result by ID (for review)
 resultRoutes.get('/results/single/:resultId', getResultById);

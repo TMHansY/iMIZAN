@@ -24,12 +24,14 @@ const getExams = asyncHandler(async (req, res) => {
       status: "approved",
     }).select("courseId sectionId");
     const approvedCourseIds = approvedEnrollments.map((e) => e.courseId);
+    const hiddenCourses = await Course.find({ courseId: { $in: approvedCourseIds }, hideFromEveryone: true }).select("courseId");
+    const hiddenCourseIds = hiddenCourses.map((course) => course.courseId);
 
     // Students see exams for courses they're enrolled in, plus any
     // "legacy" exam that predates the course system (no courseId at all).
     const enrolledExams = await Exam.find({
       $or: [
-        { courseId: { $in: approvedCourseIds } },
+        { courseId: { $in: approvedCourseIds, $nin: hiddenCourseIds } },
         { courseId: null },
         { courseId: { $exists: false } },
       ],

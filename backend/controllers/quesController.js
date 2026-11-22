@@ -2,6 +2,7 @@ import asyncHandler from 'express-async-handler';
 import Question from '../models/quesModel.js';
 import Exam from '../models/examModel.js';
 import isExamOwner from '../utils/checkExamOwnership.js';
+import isCourseHiddenFromEveryone from '../utils/isCourseHiddenFromEveryone.js';
 
 const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 
@@ -37,6 +38,14 @@ const getQuestionsByExamId = asyncHandler(async (req, res) => {
 
   if (!examId) {
     return res.status(400).json({ error: 'examId is missing or invalid' });
+  }
+
+  if (req.user.role === 'student') {
+    const exam = await Exam.findOne({ examId }).select('courseId');
+    if (!exam || await isCourseHiddenFromEveryone(exam.courseId)) {
+      res.status(404);
+      throw new Error('Exam not found');
+    }
   }
 
   const questions = await Question.find({ examId });

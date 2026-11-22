@@ -6,7 +6,6 @@ import {
   Typography,
   Box,
   Stack,
-  Chip,
   Button,
   List,
   ListItemButton,
@@ -127,6 +126,7 @@ const Dashboard = () => {
   const recentExams = [...(examsData || [])]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4);
+  const latestResultExam = examsData?.find((exam) => exam.examId === latestResult?.examId);
 
   const totalPending = pendingByExam.reduce((sum, e) => sum + e.pendingCount, 0);
 
@@ -230,12 +230,21 @@ const Dashboard = () => {
             <DashboardCard title="Latest Result">
               {latestResult ? (
                 <Stack spacing={2}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {latestResultExam?.examName || 'Exam details unavailable'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Exam score ·{' '}
+                      {new Date(latestResult.createdAt).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })}
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" alignItems="center">
                     <Typography variant="h4">{latestResult.percentage.toFixed(1)}%</Typography>
-                    <Chip
-                      label={latestResult.status === 'pass' ? 'Pass' : 'Fail'}
-                      color={latestResult.status === 'pass' ? 'success' : 'error'}
-                    />
                   </Stack>
                   <Button variant="outlined" onClick={() => navigate('/result')}>
                     View All Results

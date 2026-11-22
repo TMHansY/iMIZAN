@@ -126,6 +126,20 @@ const CourseManagement = () => {
     }
   };
 
+  const setCourseVisibility = async (course, visibility) => {
+    const isHidden = visibility === 'new_students';
+    const hideFromEveryone = visibility === 'everyone';
+    try {
+      await axiosInstance.put(`/api/courses/${course.courseId}`, { isHidden, hideFromEveryone }, {
+        withCredentials: true,
+      });
+      setCourses((items) => items.map((item) => item.courseId === course.courseId ? { ...item, isHidden, hideFromEveryone } : item));
+      toast.success(visibility === 'everyone' ? 'Course hidden from everyone' : visibility === 'new_students' ? 'Course hidden from new students' : 'Course visible to students');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update course visibility');
+    }
+  };
+
   const saveSection = async () => {
     if (!sectionForm.name.trim() || Number(sectionForm.studentLimit) < 1) {
       toast.error('Enter a section name and a valid student limit');
@@ -172,13 +186,14 @@ const CourseManagement = () => {
                 <TableCell>Name</TableCell>
                 <TableCell>Lecturer</TableCell>
                 <TableCell>Student Limit</TableCell>
+                <TableCell>Visibility</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {courses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     No courses yet. Create one to get started.
                   </TableCell>
                 </TableRow>
@@ -195,6 +210,19 @@ const CourseManagement = () => {
                       )}
                     </TableCell>
                     <TableCell>{course.studentLimit}</TableCell>
+                    <TableCell>
+                      <FormControl size="small" sx={{ minWidth: 185 }}>
+                        <Select
+                          value={course.hideFromEveryone ? 'everyone' : course.isHidden ? 'new_students' : 'visible'}
+                          onChange={(event) => setCourseVisibility(course, event.target.value)}
+                          aria-label={`Visibility for ${course.courseCode}`}
+                        >
+                          <MenuItem value="visible">Visible to students</MenuItem>
+                          <MenuItem value="new_students">Hide from new students</MenuItem>
+                          <MenuItem value="everyone">Hide from everyone</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
                         <Button size="small" variant="outlined" onClick={() => openEdit(course)}>

@@ -75,7 +75,7 @@ const ReviewPage = () => {
           </Typography>
           <Chip
             label={`Score: ${result.percentage.toFixed(1)}%`}
-            color={result.percentage >= 50 ? 'success' : 'error'}
+            color="default"
           />
         </Stack>
 

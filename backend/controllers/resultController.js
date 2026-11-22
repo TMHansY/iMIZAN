@@ -9,8 +9,7 @@ import isExamOwner from '../utils/checkExamOwnership.js';
 import { finalizeExamAttempt } from '../services/finalizeExamAttempt.js';
 import Course from '../models/courseModel.js';
 import Enrollment from '../models/enrollmentModel.js';
-
-const PASS_THRESHOLD_PERCENTAGE = 50;
+import isCourseHiddenFromEveryone from '../utils/isCourseHiddenFromEveryone.js';
 
 const releaseSelectedResults = asyncHandler(async (req, res) => {
   if (req.user.role !== 'lecturer') {
@@ -48,12 +47,10 @@ const releaseSelectedResults = asyncHandler(async (req, res) => {
   });
 });
 
-const attachStatus = (result) => {
+const attachAnswers = (result) => {
   const obj = result.toObject ? result.toObject() : result;
-  const status =
-    obj.lecturerDecision || (obj.percentage >= PASS_THRESHOLD_PERCENTAGE ? 'pass' : 'fail');
   const answers = obj.answers instanceof Map ? Object.fromEntries(obj.answers) : obj.answers;
-  return { ...obj, status, answers };
+  return { ...obj, answers };
 };
 
 const attachAttemptNumbers = (results) => {
@@ -90,6 +87,10 @@ const getAttemptCount = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Exam not found');
   }
+  if (await isCourseHiddenFromEveryone(exam.courseId)) {
+    res.status(404);
+    throw new Error('Exam not found');
+  }
 
   const attemptsUsed = await countUsedAttempts(examId, req.user._id);
   const activeAttempt = await ExamAttempt.findOne({
@@ -122,6 +123,10 @@ const saveResult = asyncHandler(async (req, res) => {
   }
   const exam = await Exam.findOne({ examId });
   if (!exam) {
+    res.status(404);
+    throw new Error('Exam not found.');
+  }
+  if (req.user.role === 'student' && await isCourseHiddenFromEveryone(exam.courseId)) {
     res.status(404);
     throw new Error('Exam not found.');
   }
@@ -170,7 +175,7 @@ const getResultsByExamId = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 });
   res.status(200).json({
     success: true,
-    data: attachAttemptNumbers(results.map(attachStatus)),
+    data: attachAttemptNumbers(results.map(attachAnswers)),
   });
 });
 
@@ -184,9 +189,14 @@ const getUserResults = asyncHandler(async (req, res) => {
   }).sort({
     createdAt: -1,
   });
+  const exams = await Exam.find({ examId: { $in: results.map((result) => result.examId) } }).select('examId courseId');
+  const hiddenCourses = await Course.find({ courseId: { $in: exams.map((exam) => exam.courseId).filter(Boolean) }, hideFromEveryone: true }).select('courseId');
+  const hiddenCourseIds = new Set(hiddenCourses.map((course) => course.courseId));
+  const hiddenExamIds = new Set(exams.filter((exam) => hiddenCourseIds.has(exam.courseId)).map((exam) => exam.examId));
+  const visibleResults = results.filter((result) => !hiddenExamIds.has(result.examId));
   res.status(200).json({
     success: true,
-    data: attachAttemptNumbers(results.map(attachStatus)),
+    data: attachAttemptNumbers(visibleResults.map(attachAnswers)),
   });
 });
 
@@ -206,6 +216,10 @@ const getResultById = asyncHandler(async (req, res) => {
   const isOwner = result.userId.toString() === req.user._id.toString();
 
   const exam = await Exam.findOne({ examId: result.examId });
+  if (isOwner && await isCourseHiddenFromEveryone(exam?.courseId)) {
+    res.status(404);
+    throw new Error('Result not found');
+  }
   const isLecturerOwner = isExamOwner(exam, req.user);
 
   if (!isOwner && !isLecturerOwner) {
@@ -215,7 +229,7 @@ const getResultById = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: attachStatus(result),
+    data: attachAnswers(result),
   });
 });
 
@@ -274,7 +288,7 @@ const getAllResults = asyncHandler(async (req, res) => {
   const enrollmentByCourseStudent = new Map(
     enrollments.map((enrollment) => [`${enrollment.courseId}:${enrollment.student}`, enrollment]),
   );
-  const results = attachAttemptNumbers(rawResults.map(attachStatus)).map((result) => {
+  const results = attachAttemptNumbers(rawResults.map(attachAnswers)).map((result) => {
     const courseId = examById.get(result.examId)?.courseId;
     const enrollment = enrollmentByCourseStudent.get(`${courseId}:${result.userId?._id}`);
     const section = courseById.get(courseId)?.sections?.find((item) => item.sectionId === enrollment?.sectionId);
@@ -283,44 +297,6 @@ const getAllResults = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: results,
-  });
-});
-
-// @desc    Lecturer overrides pass/fail status for a result
-// @route   PUT /api/users/results/:resultId/decision
-// @access  Private (Lecturer only)
-const setResultDecision = asyncHandler(async (req, res) => {
-  const { resultId } = req.params;
-  const { decision } = req.body; // 'pass', 'fail', or null to reset to automatic
-
-  if (req.user.role !== 'lecturer') {
-    res.status(403);
-    throw new Error('Not authorized to set result decisions');
-  }
-
-  if (decision !== 'pass' && decision !== 'fail' && decision !== null) {
-    res.status(400);
-    throw new Error("Decision must be 'pass', 'fail', or null");
-  }
-
-  const result = await Result.findById(resultId);
-  if (!result) {
-    res.status(404);
-    throw new Error('Result not found');
-  }
-
-  const exam = await Exam.findOne({ examId: result.examId });
-  if (!isExamOwner(exam, req.user)) {
-    res.status(403);
-    throw new Error('Not authorized to set decisions for this result');
-  }
-
-  result.lecturerDecision = decision;
-  await result.save();
-
-  res.status(200).json({
-    success: true,
-    data: attachStatus(result),
   });
 });
 
@@ -367,9 +343,14 @@ const setExamResultsVisibility = asyncHandler(async (req, res) => {
 // @access  Private
 const getMyExamStatus = asyncHandler(async (req, res) => {
   const results = await Result.find({ userId: req.user._id }).sort({ createdAt: -1 });
+  const exams = await Exam.find({ examId: { $in: results.map((result) => result.examId) } }).select('examId courseId');
+  const hiddenCourses = await Course.find({ courseId: { $in: exams.map((exam) => exam.courseId).filter(Boolean) }, hideFromEveryone: true }).select('courseId');
+  const hiddenCourseIds = new Set(hiddenCourses.map((course) => course.courseId));
+  const hiddenExamIds = new Set(exams.filter((exam) => hiddenCourseIds.has(exam.courseId)).map((exam) => exam.examId));
 
   const statusByExam = {};
   for (const r of results) {
+    if (hiddenExamIds.has(r.examId)) continue;
     if (!statusByExam[r.examId]) {
       statusByExam[r.examId] = {
         examId: r.examId,
@@ -402,7 +383,7 @@ const getPendingReviewSummary = asyncHandler(async (req, res) => {
   const ownedExamIds = ownedExams.map((e) => e.examId);
 
   const pendingResults = await Result.aggregate([
-    { $match: { lecturerDecision: null, examId: { $in: ownedExamIds } } },
+    { $match: { showToStudent: { $ne: true }, examId: { $in: ownedExamIds } } },
     { $group: { _id: '$examId', count: { $sum: 1 } } },
   ]);
 
@@ -476,7 +457,6 @@ export {
   toggleResultVisibility,
   getAllResults,
   getAttemptCount,
-  setResultDecision,
   getResultById,
   setExamResultsVisibility,
   getMyExamStatus,

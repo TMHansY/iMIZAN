@@ -9,7 +9,18 @@ import { v4 as uuidv4 } from "uuid";
 // @route   GET /api/courses
 // @access  Private
 const getCourses = asyncHandler(async (req, res) => {
-  const courses = await Course.find()
+  let courseFilter = {};
+  if (req.user.role === "student") {
+    const enrolledCourseIds = await Enrollment.distinct("courseId", { student: req.user._id });
+    courseFilter = {
+      hideFromEveryone: { $ne: true },
+      $or: [{ isHidden: { $ne: true } }, { courseId: { $in: enrolledCourseIds } }],
+    };
+  } else if (req.user.role !== "admin") {
+    courseFilter = { isHidden: { $ne: true }, hideFromEveryone: { $ne: true } };
+  }
+
+  const courses = await Course.find(courseFilter)
     .populate("lecturer", "name email")
     .sort({ createdAt: -1 });
   const enrollmentsBySection = await Enrollment.aggregate([
@@ -39,7 +50,7 @@ const createCourse = asyncHandler(async (req, res) => {
     throw new Error("Not authorized");
   }
 
-  const { courseCode, courseName, description, lecturer, studentLimit } = req.body;
+  const { courseCode, courseName, description, lecturer, studentLimit, isHidden, hideFromEveryone } = req.body;
 
   const exists = await Course.findOne({ courseCode });
   if (exists) {
@@ -61,6 +72,8 @@ const createCourse = asyncHandler(async (req, res) => {
     description,
     lecturer: lecturer || null,
     studentLimit,
+    isHidden: isHidden === true,
+    hideFromEveryone: hideFromEveryone === true,
   });
 
   res.status(201).json(course);
@@ -76,7 +89,7 @@ const updateCourse = asyncHandler(async (req, res) => {
   }
 
   const { courseId } = req.params;
-  const { courseCode, courseName, description, lecturer, studentLimit } = req.body;
+  const { courseCode, courseName, description, lecturer, studentLimit, isHidden, hideFromEveryone } = req.body;
 
   const course = await Course.findOne({ courseId });
   if (!course) {
@@ -96,6 +109,12 @@ const updateCourse = asyncHandler(async (req, res) => {
   course.courseName = courseName ?? course.courseName;
   course.description = description ?? course.description;
   course.studentLimit = studentLimit ?? course.studentLimit;
+  if (isHidden !== undefined) {
+    course.isHidden = isHidden === true;
+  }
+  if (hideFromEveryone !== undefined) {
+    course.hideFromEveryone = hideFromEveryone === true;
+  }
   // Allow explicitly clearing the lecturer by passing null
   if (lecturer !== undefined) {
     course.lecturer = lecturer || null;

@@ -4,6 +4,7 @@ import Result from '../models/resultModel.js';
 import Exam from '../models/examModel.js';
 import Enrollment from '../models/enrollmentModel.js';
 import { attemptDeadline, validateProgress } from '../utils/examAttemptProgress.js';
+import isCourseHiddenFromEveryone from '../utils/isCourseHiddenFromEveryone.js';
 
 export const countUsedAttempts = async (examId, userId) => {
   const [legacyResults, startedAttempts] = await Promise.all([
@@ -22,6 +23,10 @@ export const startOrResumeAttempt = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const exam = await Exam.findOne({ examId });
   if (!exam) {
+    res.status(404);
+    throw new Error('Exam not found.');
+  }
+  if (await isCourseHiddenFromEveryone(exam.courseId)) {
     res.status(404);
     throw new Error('Exam not found.');
   }
@@ -84,6 +89,14 @@ export const startOrResumeAttempt = asyncHandler(async (req, res) => {
 });
 
 export const saveAttemptProgress = asyncHandler(async (req, res) => {
+  const currentAttempt = await ExamAttempt.findOne({ _id: req.params.attemptId, userId: req.user._id, status: 'active' }).select('examId');
+  if (currentAttempt) {
+    const exam = await Exam.findOne({ examId: currentAttempt.examId }).select('courseId');
+    if (await isCourseHiddenFromEveryone(exam?.courseId)) {
+      res.status(404);
+      throw new Error('Exam not found.');
+    }
+  }
   let progress;
   try {
     progress = validateProgress(req.body);
