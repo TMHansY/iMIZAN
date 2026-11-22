@@ -7,6 +7,7 @@ import {
   getUserResults,
   deleteResult,
   toggleResultVisibility,
+  setResultIntegrityDecision,
   getAllResults,
   getAttemptCount,
   getResultById,
@@ -41,6 +42,7 @@ resultRoutes.get('/results/user', getUserResults);
 
 // Toggle result visibility
 resultRoutes.put('/results/:resultId/toggle-visibility', toggleResultVisibility);
+resultRoutes.put('/results/:resultId/integrity', setResultIntegrityDecision);
 
 // Get a single result by ID (for review)
 resultRoutes.get('/results/single/:resultId', getResultById);

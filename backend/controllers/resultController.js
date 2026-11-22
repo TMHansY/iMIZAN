@@ -10,6 +10,7 @@ import { finalizeExamAttempt } from '../services/finalizeExamAttempt.js';
 import Course from '../models/courseModel.js';
 import Enrollment from '../models/enrollmentModel.js';
 import isCourseHiddenFromEveryone from '../utils/isCourseHiddenFromEveryone.js';
+import Question from '../models/quesModel.js';
 
 const releaseSelectedResults = asyncHandler(async (req, res) => {
   if (req.user.role !== 'lecturer') {
@@ -50,7 +51,27 @@ const releaseSelectedResults = asyncHandler(async (req, res) => {
 const attachAnswers = (result) => {
   const obj = result.toObject ? result.toObject() : result;
   const answers = obj.answers instanceof Map ? Object.fromEntries(obj.answers) : obj.answers;
-  return { ...obj, answers };
+  return {
+    ...obj,
+    answers,
+    integrityStatus: obj.integrityDecision === 'cheating' ? 'Cheating confirmed' : 'Clear',
+  };
+};
+
+const attachMaxMarks = async (results) => {
+  const normalized = results.map(attachAnswers);
+  const needsMaxMarks = normalized.filter((result) => result.maxMarks == null);
+  if (needsMaxMarks.length === 0) return normalized;
+  const examIds = [...new Set(needsMaxMarks.map((result) => result.examId))];
+  const questions = await Question.find({ examId: { $in: examIds } }).select('examId ansmarks');
+  const maxMarksByExam = new Map();
+  questions.forEach((question) => {
+    maxMarksByExam.set(question.examId, (maxMarksByExam.get(question.examId) || 0) + (question.ansmarks || 1));
+  });
+  return normalized.map((result) => ({
+    ...result,
+    maxMarks: result.maxMarks ?? maxMarksByExam.get(result.examId) ?? 0,
+  }));
 };
 
 const attachAttemptNumbers = (results) => {
@@ -175,7 +196,7 @@ const getResultsByExamId = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 });
   res.status(200).json({
     success: true,
-    data: attachAttemptNumbers(results.map(attachAnswers)),
+    data: attachAttemptNumbers(await attachMaxMarks(results)),
   });
 });
 
@@ -196,7 +217,7 @@ const getUserResults = asyncHandler(async (req, res) => {
   const visibleResults = results.filter((result) => !hiddenExamIds.has(result.examId));
   res.status(200).json({
     success: true,
-    data: attachAttemptNumbers(visibleResults.map(attachAnswers)),
+    data: attachAttemptNumbers(await attachMaxMarks(visibleResults)),
   });
 });
 
@@ -229,7 +250,7 @@ const getResultById = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: attachAnswers(result),
+    data: (await attachMaxMarks([result]))[0],
   });
 });
 
@@ -260,6 +281,35 @@ const toggleResultVisibility = asyncHandler(async (req, res) => {
   });
 });
 
+const setResultIntegrityDecision = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'lecturer') {
+    res.status(403);
+    throw new Error('Not authorized to update result integrity status');
+  }
+
+  const { resultId } = req.params;
+  const { integrityDecision } = req.body;
+  if (integrityDecision !== null && !['clear', 'cheating'].includes(integrityDecision)) {
+    res.status(400);
+    throw new Error('Integrity decision must be automatic, clear, or cheating');
+  }
+
+  const result = await Result.findById(resultId);
+  if (!result) {
+    res.status(404);
+    throw new Error('Result not found');
+  }
+  const exam = await Exam.findOne({ examId: result.examId });
+  if (!isExamOwner(exam, req.user)) {
+    res.status(403);
+    throw new Error('Not authorized to update this result');
+  }
+
+  result.integrityDecision = integrityDecision;
+  await result.save();
+  res.status(200).json({ success: true, data: attachAnswers(result) });
+});
+
 // @desc    Get all results (for lecturers)
 // @route   GET /api/results/all
 // @access  Private (Lecturer only)
@@ -288,7 +338,8 @@ const getAllResults = asyncHandler(async (req, res) => {
   const enrollmentByCourseStudent = new Map(
     enrollments.map((enrollment) => [`${enrollment.courseId}:${enrollment.student}`, enrollment]),
   );
-  const results = attachAttemptNumbers(rawResults.map(attachAnswers)).map((result) => {
+  const resultsWithMaxMarks = await attachMaxMarks(rawResults);
+  const results = attachAttemptNumbers(resultsWithMaxMarks).map((result) => {
     const courseId = examById.get(result.examId)?.courseId;
     const enrollment = enrollmentByCourseStudent.get(`${courseId}:${result.userId?._id}`);
     const section = courseById.get(courseId)?.sections?.find((item) => item.sectionId === enrollment?.sectionId);
@@ -455,6 +506,7 @@ export {
   getUserResults,
   deleteResult,
   toggleResultVisibility,
+  setResultIntegrityDecision,
   getAllResults,
   getAttemptCount,
   getResultById,

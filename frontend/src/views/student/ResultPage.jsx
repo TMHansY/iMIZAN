@@ -173,6 +173,33 @@ const ResultPage = () => {
     }
   };
 
+  const handleIntegrityDecision = async (resultId, value) => {
+    if (!beginVisibilityUpdate()) return;
+    const integrityDecision = value === 'automatic' ? null : value;
+    try {
+      await axiosInstance.put(
+        `/api/users/results/${resultId}/integrity`,
+        { integrityDecision },
+        { withCredentials: true },
+      );
+      setReviewResult((current) => current?._id === resultId ? { ...current, integrityDecision } : current);
+      await refreshResults();
+      toast.success(integrityDecision === 'cheating' ? 'Cheating confirmed for this result' : 'Integrity status set to automatic: clear');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to update integrity status');
+    } finally {
+      endVisibilityUpdate();
+    }
+  };
+
+  const renderIntegrityChip = (result) => (
+    <Chip
+      size="small"
+      color={result.integrityDecision === 'cheating' ? 'error' : 'success'}
+      label={result.integrityDecision === 'cheating' ? 'Cheating confirmed' : 'Clear'}
+    />
+  );
+
   const handleExamChange = (examId) => {
     setSelectedExam(examId);
     setSectionFilter('all');
@@ -441,9 +468,12 @@ const ResultPage = () => {
                           />
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" color="textSecondary">
-                            Total: {result.totalMarks}
-                          </Typography>
+                          <Stack spacing={0.75} alignItems="flex-start">
+                            <Typography variant="body2" color="textSecondary">
+                              Marks: {result.totalMarks} / {result.maxMarks ?? '—'}
+                            </Typography>
+                            {renderIntegrityChip(result)}
+                          </Stack>
                         </TableCell>
                         <TableCell>{formatDuration(result.timeTakenSeconds)}</TableCell>
                         <TableCell>{new Date(result.createdAt).toLocaleDateString()}</TableCell>
@@ -716,7 +746,7 @@ const ResultPage = () => {
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2" color="textSecondary">
-                              Total: {group.latest.totalMarks}
+                              Marks: {group.latest.totalMarks} / {group.latest.maxMarks ?? '—'}
                             </Typography>
                           </TableCell>
                           <TableCell>{formatDuration(group.latest.timeTakenSeconds)}</TableCell>
@@ -748,7 +778,7 @@ const ResultPage = () => {
                               </TableCell>
                               <TableCell>
                                 <Typography variant="body2" color="textSecondary">
-                                  Total: {attempt.totalMarks}
+                                  Marks: {attempt.totalMarks} / {attempt.maxMarks ?? '—'}
                                 </Typography>
                               </TableCell>
                               <TableCell>{formatDuration(attempt.timeTakenSeconds)}</TableCell>
@@ -788,8 +818,28 @@ const ResultPage = () => {
           ) : (
             <>
               <Typography variant="subtitle2" gutterBottom>
-                Score: {reviewResult?.percentage?.toFixed(1)}% (Total: {reviewResult?.totalMarks})
+                Score: {reviewResult?.percentage?.toFixed(1)}% (Marks: {reviewResult?.totalMarks} / {reviewResult?.maxMarks ?? '—'})
               </Typography>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} alignItems={{ sm: 'center' }}>
+                <Typography variant="subtitle2">Integrity</Typography>
+                {renderIntegrityChip(reviewResult || {})}
+                {userInfo?.role === 'lecturer' && reviewResult && (
+                  <FormControl size="small" sx={{ minWidth: 190 }}>
+                    <InputLabel id="result-integrity-label">Decision</InputLabel>
+                    <Select
+                      labelId="result-integrity-label"
+                      label="Decision"
+                      value={reviewResult.integrityDecision || 'automatic'}
+                      onChange={(event) => handleIntegrityDecision(reviewResult._id, event.target.value)}
+                      disabled={visibilitySaving}
+                    >
+                      <MenuItem value="automatic">Automatic: clear</MenuItem>
+                      <MenuItem value="cheating">Cheating confirmed</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+              </Stack>
 
               <Divider sx={{ my: 2 }} />
 

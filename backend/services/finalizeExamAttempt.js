@@ -36,6 +36,7 @@ export async function finalizeExamAttempt({ examId, attemptId, userId, finishedA
   const timeTakenSeconds = Math.max(0, Math.round((completedAt - new Date(attempt.startedAt).getTime()) / 1000));
   const questions = await Question.find({ examId });
   let totalMarks = 0;
+  const maxMarks = questions.reduce((total, question) => total + (question.ansmarks || 1), 0);
   let correctAnswers = 0;
 
   for (const question of questions) {
@@ -62,6 +63,7 @@ export async function finalizeExamAttempt({ examId, attemptId, userId, finishedA
           userId,
           answers,
           totalMarks,
+          maxMarks,
           percentage,
           timeTakenSeconds,
           showToStudent: false,

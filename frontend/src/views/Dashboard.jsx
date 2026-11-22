@@ -12,6 +12,7 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  Chip,
 } from '@mui/material';
 import EventIcon from '@mui/icons-material/Event';
 import RateReviewIcon from '@mui/icons-material/RateReview';
@@ -246,6 +247,12 @@ const Dashboard = () => {
                   <Stack direction="row" alignItems="center">
                     <Typography variant="h4">{latestResult.percentage.toFixed(1)}%</Typography>
                   </Stack>
+                  <Chip
+                    size="small"
+                    color={latestResult.integrityDecision === 'cheating' ? 'error' : 'success'}
+                    label={latestResult.integrityStatus || 'Clear'}
+                    sx={{ alignSelf: 'flex-start' }}
+                  />
                   <Button variant="outlined" onClick={() => navigate('/result')}>
                     View All Results
                   </Button>

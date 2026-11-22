@@ -27,6 +27,15 @@ const resultSchema = mongoose.Schema(
       required: true,
       default: 0,
     },
+    maxMarks: {
+      type: Number,
+      default: null,
+    },
+    integrityDecision: {
+      type: String,
+      enum: ['clear', 'cheating'],
+      default: null,
+    },
     percentage: {
       type: Number,
       required: true,
