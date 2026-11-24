@@ -34,7 +34,7 @@ const resultSchema = mongoose.Schema(
     integrityDecision: {
       type: String,
       enum: ['clear', 'cheating'],
-      default: null,
+      default: 'clear',
     },
     percentage: {
       type: Number,

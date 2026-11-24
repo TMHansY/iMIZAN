@@ -260,7 +260,7 @@ For an Express-hosted frontend:
 
 Express serves `frontend/build` in production. For a separate frontend deployment, set `REACT_APP_BACKEND_URL` before building and update the allowed origins in [backend/server.js](backend/server.js).
 
-Authentication uses HTTP-only cookies configured with `Secure` and `SameSite=None`. Use HTTPS for deployed environments and verify credentialed requests and cookie handling for your chosen frontend/backend origins. Camera access also requires a browser-supported secure context.
+Authentication uses an HTTP-only session cookie. In development it uses `SameSite=Lax` without `Secure` so it works over plain HTTP, including a phone connected to the same Wi-Fi at the frontend's LAN address. Production uses `Secure` and `SameSite=None`, so deploy behind HTTPS. Camera access also requires a browser-supported secure context; a plain HTTP LAN address may not allow camera access on some phones.
 
 ## Troubleshooting
 

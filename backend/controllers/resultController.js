@@ -289,9 +289,9 @@ const setResultIntegrityDecision = asyncHandler(async (req, res) => {
 
   const { resultId } = req.params;
   const { integrityDecision } = req.body;
-  if (integrityDecision !== null && !['clear', 'cheating'].includes(integrityDecision)) {
+  if (!['clear', 'cheating'].includes(integrityDecision)) {
     res.status(400);
-    throw new Error('Integrity decision must be automatic, clear, or cheating');
+    throw new Error('Integrity decision must be clear or cheating');
   }
 
   const result = await Result.findById(resultId);

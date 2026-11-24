@@ -1,6 +1,6 @@
 import { UploadClient } from '@uploadcare/upload-client';
 
 export const uploadcareClient = new UploadClient({
-  publicKey: 'ad3316af84d6a1176983',
-  baseCDN: 'https://5u5k52y8w7.ucarecd.net',
+  publicKey: '5a2131b4ff24214301c9', // tmhansy git acc
+  baseCDN: 'https://1tpesiohue.ucarecd.net',
 });

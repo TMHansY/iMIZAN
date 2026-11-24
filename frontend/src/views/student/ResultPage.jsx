@@ -175,7 +175,7 @@ const ResultPage = () => {
 
   const handleIntegrityDecision = async (resultId, value) => {
     if (!beginVisibilityUpdate()) return;
-    const integrityDecision = value === 'automatic' ? null : value;
+    const integrityDecision = value;
     try {
       await axiosInstance.put(
         `/api/users/results/${resultId}/integrity`,
@@ -184,7 +184,7 @@ const ResultPage = () => {
       );
       setReviewResult((current) => current?._id === resultId ? { ...current, integrityDecision } : current);
       await refreshResults();
-      toast.success(integrityDecision === 'cheating' ? 'Cheating confirmed for this result' : 'Integrity status set to automatic: clear');
+      toast.success(integrityDecision === 'cheating' ? 'Cheating confirmed for this result' : 'Integrity status set to clear');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to update integrity status');
     } finally {
@@ -830,11 +830,11 @@ const ResultPage = () => {
                     <Select
                       labelId="result-integrity-label"
                       label="Decision"
-                      value={reviewResult.integrityDecision || 'automatic'}
+                      value={reviewResult.integrityDecision || 'clear'}
                       onChange={(event) => handleIntegrityDecision(reviewResult._id, event.target.value)}
                       disabled={visibilitySaving}
                     >
-                      <MenuItem value="automatic">Automatic: clear</MenuItem>
+                      <MenuItem value="clear">Clear</MenuItem>
                       <MenuItem value="cheating">Cheating confirmed</MenuItem>
                     </Select>
                   </FormControl>

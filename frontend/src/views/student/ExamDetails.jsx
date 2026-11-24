@@ -18,6 +18,7 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
 } from '@mui/material';
 import QuizOutlinedIcon from '@mui/icons-material/QuizOutlined';
 import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
@@ -39,6 +40,7 @@ import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
 import ShuffleOutlinedIcon from '@mui/icons-material/ShuffleOutlined';
 import PreviewIcon from '@mui/icons-material/Preview';
 import useProctoringModels from '../../hooks/useProctoringModels';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 const buildInstructionItems = (exam) => {
   const items = [
@@ -374,6 +376,13 @@ export default function ExamDetails() {
                 : 'info'
             }
             sx={{ mt: 2 }}
+            icon={
+              preparation.status === 'ready' ? (
+                <CheckCircleOutlineIcon fontSize="inherit" />
+              ) : preparation.status === 'error' ? undefined : (
+                <CircularProgress size={18} color="inherit" />
+              )
+            }
             action={
               preparation.status === 'error' ? (
                 <Button color="inherit" onClick={preparation.retry}>
