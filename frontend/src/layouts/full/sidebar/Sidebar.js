@@ -32,7 +32,7 @@ const Sidebar = ({ isMobileSidebarOpen, onSidebarClose }) => {
             iMIZAN
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Examination platform
+            Online Examination Platform
           </Typography>
         </Box>
       </Stack>
