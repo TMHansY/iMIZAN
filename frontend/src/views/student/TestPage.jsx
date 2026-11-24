@@ -232,10 +232,10 @@ const TestPage = () => {
                       maxHeight: 300,
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: 'start',
-                      justifyContent: 'center',
+                      alignItems: 'stretch',
+                      justifyContent: 'flex-start',
                       overflowY: 'auto',
-                      height: '100%',
+                      minHeight: 0,
                     }}
                   >
                     <NumberOfQuestions

@@ -31,7 +31,7 @@ import {
   Divider,
   Checkbox,
 } from '@mui/material';
-import { Visibility, VisibilityOff, Search } from '@mui/icons-material';
+import { Visibility, VisibilityOff, Search, Print } from '@mui/icons-material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import RateReviewIcon from '@mui/icons-material/RateReview';
@@ -503,6 +503,82 @@ const ResultPage = () => {
   // Lecturer View
   return (
     <PageContainer title="Results Dashboard" description="View and manage exam results">
+      <style>{`
+        .results-print-root { display: none; }
+        @media print {
+          @page { size: landscape; margin: 10mm; }
+          body * { visibility: hidden !important; }
+          .results-print-root,
+          .results-print-root * {
+            visibility: visible !important;
+            color: #111 !important;
+          }
+          .results-print-root {
+            display: block !important;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            color: #111 !important;
+            background: #fff !important;
+          }
+          .results-print-root table { width: 100%; border-collapse: collapse; }
+          .results-print-root th,
+          .results-print-root td {
+            border: 1px solid #777;
+            padding: 4px;
+            color: #111 !important;
+            font-size: 8pt;
+            text-align: left;
+            overflow-wrap: anywhere;
+          }
+          .results-print-root th { background: #eee !important; }
+          .results-print-root thead { display: table-header-group; }
+          .results-print-root tr { break-inside: avoid; }
+        }
+      `}</style>
+      <Box className="results-print-root">
+        <Typography variant="h5" sx={{ color: '#111', mb: 1 }}>Exam Results</Typography>
+        <Typography sx={{ color: '#111', mb: 2, fontSize: '9pt' }}>
+          {selectedExam === 'all'
+            ? 'All exams'
+            : exams.find((exam) => exam.examId === selectedExam)?.examName || 'Selected exam'}
+          {' · '}
+          {sectionFilter === 'all'
+            ? 'All sections'
+            : sectionFilter === 'unassigned'
+              ? 'Unassigned'
+              : sectionOptions.find((section) => section.sectionId === sectionFilter)?.label || 'Selected section'}
+          {searchTerm ? ` · Search: ${searchTerm}` : ''}
+          {' · '}{filteredResults.length} attempt(s)
+        </Typography>
+        <table>
+          <thead>
+            <tr>
+              <th>Student Name</th><th>Email</th><th>Exam</th><th>Section</th>
+              <th>Attempt</th><th>Total Attempts</th><th>Percentage</th><th>Total Score</th>
+              <th>Time Taken</th><th>Submission Date</th><th>Student Visibility</th><th>Integrity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredResults.map((result) => (
+              <tr key={result._id}>
+                <td>{result.userId?.name || '—'}</td>
+                <td>{result.userId?.email || '—'}</td>
+                <td>{exams.find((exam) => exam.examId === result.examId)?.examName || 'Unknown Exam'}</td>
+                <td>{result.sectionName || 'Unassigned'}</td>
+                <td>{result.attemptNumber ?? '—'}</td>
+                <td>{result.totalAttemptsForExam ?? '—'}</td>
+                <td>{typeof result.percentage === 'number' ? `${result.percentage.toFixed(1)}%` : '—'}</td>
+                <td>{result.totalMarks ?? '—'} / {result.maxMarks ?? '—'}</td>
+                <td>{formatDuration(result.timeTakenSeconds)}</td>
+                <td>{result.createdAt ? new Date(result.createdAt).toLocaleString() : '—'}</td>
+                <td>{result.showToStudent ? 'Released' : 'Not released'}</td>
+                <td>{result.integrityDecision || 'Not reviewed'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Box>
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Card>
@@ -628,6 +704,14 @@ const ResultPage = () => {
               >
                 {visibilitySaving ? 'Updating…' : `Release Selected (${selectedResultIds.length})`}
               </Button>
+              <Button
+                variant="outlined"
+                startIcon={<Print />}
+                onClick={() => window.print()}
+                disabled={filteredResults.length === 0}
+              >
+                Print / Download PDF
+              </Button>
               <Typography variant="body2" color="text.secondary">
                 Select results to release to students. Select all includes earlier attempts matching
                 these filters. Already released results cannot be selected.
@@ -635,7 +719,7 @@ const ResultPage = () => {
             </Stack>
 
             <TableContainer component={Paper}>
-              <Table>
+              <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell padding="checkbox">

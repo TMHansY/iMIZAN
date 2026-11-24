@@ -28,9 +28,9 @@ export function validateProgress(body) {
       url,
       type,
       detectedAt,
+      ...(typeof eventId === 'string' ? { eventId } : {}),
       ...(type === 'tabSwitch'
         ? {
-            ...(typeof eventId === 'string' ? { eventId } : {}),
             ...(durationSeconds === null
               ? { durationSeconds: null }
               : typeof durationSeconds === 'number' &&

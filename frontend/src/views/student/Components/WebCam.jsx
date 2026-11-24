@@ -18,6 +18,8 @@ const LOOK_AWAY_THRESHOLD = 0.16;
 // How long a condition must hold continuously before it counts as a real
 // violation (filters out momentary flickers / quick glances).
 const FACE_ISSUE_SUSTAIN_MS = 3000;
+const SCREENSHOT_MAX_WIDTH = 800;
+const SCREENSHOT_JPEG_QUALITY = 0.72;
 
 export default function Home({
   cheatingLog,
@@ -28,13 +30,22 @@ export default function Home({
   const webcamRef = useRef(null);
   const activeRef = useRef(true);
   const canvasRef = useRef(null);
-  const callbacks = useRef({ incrementViolation, onCameraAccessLost });
-  callbacks.current = { incrementViolation, onCameraAccessLost };
+  const callbacks = useRef({ incrementViolation, updateViolation, onCameraAccessLost });
+  callbacks.current = { incrementViolation, updateViolation, onCameraAccessLost };
   const lastDetectionTime = useRef({});
   const faceIssueStartRef = useRef(null);
   const [cameraStatus, setCameraStatus] = useState('checking');
   const [mediaStream, setMediaStream] = useState(null);
   const cameraLossReported = useRef(false);
+  const uploadQueue = useRef(Promise.resolve());
+
+  const enqueueUpload = (file) => {
+    const upload = uploadQueue.current
+      .catch(() => {})
+      .then(() => client.uploadFile(file, { store: true }));
+    uploadQueue.current = upload.catch(() => {});
+    return upload;
+  };
 
   useEffect(() => {
     const tracks = mediaStream?.getVideoTracks?.() || [];
@@ -59,16 +70,23 @@ export default function Home({
       }
 
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      const scale = Math.min(1, SCREENSHOT_MAX_WIDTH / video.videoWidth);
+      canvas.width = Math.round(video.videoWidth * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
 
       const context = canvas.getContext('2d');
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const dataUrl = canvas.toDataURL('image/jpeg');
-      const file = dataURLtoFile(dataUrl, `cheating_${Date.now()}.jpg`);
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (value) => (value ? resolve(value) : reject(new Error('Screenshot encoding failed'))),
+          'image/jpeg',
+          SCREENSHOT_JPEG_QUALITY,
+        );
+      });
+      const file = new File([blob], `cheating_${Date.now()}.jpg`, { type: 'image/jpeg' });
 
-      const result = await client.uploadFile(file, { store: true });
+      const result = await enqueueUpload(file);
 
       const screenshot = {
         url: result.cdnUrl,
@@ -78,7 +96,7 @@ export default function Home({
 
       return screenshot;
     } catch (error) {
-      console.error('❌ Upload failed:', error);
+      console.error(`Screenshot upload failed (${type}):`, error);
       return null;
     }
   };
@@ -97,9 +115,13 @@ export default function Home({
     if (now - lastTime >= 3000) {
       lastDetectionTime.current[type] = now;
 
-      const screenshot = await captureScreenshotAndUpload(type);
+      const detectedAt = new Date();
+      const eventId = crypto.randomUUID();
+      callbacks.current.incrementViolation(type, { eventId, url: '', type, detectedAt });
+      captureScreenshotAndUpload(type, detectedAt).then((screenshot) => {
+        if (screenshot) callbacks.current.updateViolation?.(eventId, { url: screenshot.url });
+      });
       if (!activeRef.current) return;
-      callbacks.current.incrementViolation(type, screenshot);
 
       // Non-blocking toast — doesn't require a click, doesn't interrupt
       // answering questions, and auto-dismisses on its own.

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { styled, Container, Box } from '@mui/material';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import Header from './header/Header';
 import Sidebar from './sidebar/Sidebar';
@@ -23,6 +23,8 @@ const PageWrapper = styled('div')(() => ({
 
 const FullLayout = () => {
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isResultsPage = pathname === '/result' || pathname.startsWith('/result/');
 
   return (
     <MainWrapper className="mainwrapper">
@@ -48,7 +50,8 @@ const FullLayout = () => {
           sx={{
             paddingTop: { xs: '24px', md: '32px' },
             px: { xs: 2, sm: 3, lg: 4 },
-            maxWidth: '1200px',
+            width: '100%',
+            maxWidth: isResultsPage ? 'none' : '1200px',
           }}
         >
           {/* ------------------------------------------- */}
