@@ -47,11 +47,11 @@ const FullLayout = () => {
         {/* PageContent */}
         {/* ------------------------------------------- */}
         <Container
+          maxWidth={isResultsPage ? false : 'lg'}
           sx={{
             paddingTop: { xs: '24px', md: '32px' },
             px: { xs: 2, sm: 3, lg: 4 },
             width: '100%',
-            maxWidth: isResultsPage ? 'none' : '1200px',
           }}
         >
           {/* ------------------------------------------- */}
